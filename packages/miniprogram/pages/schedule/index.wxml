@@ -1,0 +1,50 @@
+<!-- 课程表页面 —— 周视图网格 -->
+<view class="page-container">
+  <!-- 周选择条 -->
+  <week-strip
+    startDate="{{weekStart}}"
+    endDate="{{weekEnd}}"
+    bind:prev-week="onPrevWeek"
+    bind:next-week="onNextWeek"
+  />
+
+  <!-- 星期表头 -->
+  <view class="weekday-header">
+    <view
+      wx:for="{{weekdayLabels}}"
+      wx:key="index"
+      class="weekday-cell {{dayDates[index].isToday ? 'today' : ''}}"
+    >
+      <text class="weekday-label">{{item}}</text>
+      <text class="weekday-date">{{dayDates[index].dayNum}}日</text>
+    </view>
+  </view>
+
+  <!-- 课程网格 -->
+  <view class="week-grid" wx:if="{{!loading}}">
+    <view
+      wx:for="{{weekData}}"
+      wx:key="index"
+      class="day-column {{dayDates[index].isToday ? 'today-column' : ''}}"
+    >
+      <view wx:if="{{item.length === 0}}" class="no-course">
+        <text class="no-course-text">无</text>
+      </view>
+      <view wx:for="{{item}}" wx:for-item="course" wx:key="ruleId" class="course-wrapper">
+        <course-slot
+          name="{{course.courseName}}"
+          startTime="{{course.startTime}}"
+          endTime="{{course.endTime}}"
+          location="{{course.location}}"
+          color="{{course.color}}"
+          compact="{{true}}"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

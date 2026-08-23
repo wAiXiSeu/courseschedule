@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "今日",
+  "usingComponents": {
+    "course-slot": "/components/course-slot/index"
+  }
+}

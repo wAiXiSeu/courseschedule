@@ -1,0 +1,117 @@
+%% 4.1a 遗忘曲线复习任务生成流程（录入学习内容）
+sequenceDiagram
+    autonumber
+    actor P as 家长
+    participant Form as ReviewItemFormDialog
+    participant RS as useReviewStore
+    participant Rep as ReviewRepository
+    participant DB as IndexedDB
+    participant Sch as ReviewScheduler(纯函数)
+
+    P->>Form: 填写标题/科目/学习日期/间隔序列
+    Form->>Form: validation.ts 校验（间隔升序、≥1天）
+    Form->>RS: createReviewItem(dto)
+    RS->>RS: genId() 生成 ReviewItem（sourceType='manual'）
+    RS->>Sch: buildFirstTask(item)
+    Note over Sch: 首个节点：dueDate = learnDate + intervals[0]
+    Sch-->>RS: ReviewTask(intervalIndex=0, status='pending')
+    RS->>Rep: putItem(item) + putTask(task)
+    Rep->>DB: 写 reviewItems / reviewTasks
+    DB-->>Rep: 成功
+    Rep-->>RS: 完成
+    RS-->>Form: 关闭弹窗，刷新复习计划列表
+
+%% 4.1b 到期复习任务出现在今日视图（打开应用时）
+sequenceDiagram
+    autonumber
+    actor K as 孩子
+    participant TP as TodayPage
+    participant Hook as useTodayData
+    participant Agg as TodayAggregator(纯函数)
+    participant Rep as 各 Repository
+    participant DB as IndexedDB
+
+    K->>TP: 打开应用（孩子模式默认落在今日）
+    TP->>Hook: 挂载，请求 TodayViewData(today)
+    Hook->>Rep: 并行查询：课程+排课规则 / 活跃计划任务 / 到期复习任务 / 当日打卡
+    Rep->>DB: reviewTasks.where('childId+dueDate').<=today, status='pending'
+    DB-->>Rep: 数据集
+    Rep-->>Hook: ScheduleRule[] / PlanTask[] / ReviewTask[] / CheckInRecord[]
+    Hook->>Agg: aggregate(today, input)
+    Note over Agg: OccurrenceExpander 展开当日课程；<br/>过滤今日命中的计划任务；<br/>到期复习任务标记 due=true；<br/>用打卡记录标 done
+    Agg-->>Hook: TodayViewData
+    Hook-->>TP: 渲染时间轴 + 任务清单 + 连续打卡/本周格子
+
+%% 4.2 每日打卡流程（含复习任务推进）
+sequenceDiagram
+    autonumber
+    actor K as 孩子
+    participant TL as TodayTaskList/CheckinPage
+    participant SB as StarBurst(动效)
+    participant CS as useCheckinStore
+    participant Rep as CheckinRepository
+    participant RR as ReviewRepository
+    participant DB as IndexedDB
+    participant St as StreakCalculator(纯函数)
+
+    K->>TL: 点击任务 [打卡]
+    TL->>TL: 判断 refType
+    alt refType = 'plan_task'（学习任务）
+        TL->>CS: checkIn(childId, 'plan_task', refId, today)
+        CS->>CS: 构造 CheckInRecord(date=today, isMakeup=false)
+        CS->>Rep: create(record)
+        Rep->>DB: 写 checkinRecords
+    else refType = 'review_task'（复习任务）
+        TL->>CS: checkIn(childId, 'review_task', refId, today)
+        CS->>Rep: create(CheckInRecord)
+        Rep->>DB: 写 checkinRecords
+        CS->>RR: completeReviewTask(taskId, doneAt)
+        RR->>DB: 更新 reviewTask.status='done'
+        RR->>RR: ReviewScheduler.buildNextTask(item, intervalIndex)
+        Note over RR: 若存在下一间隔节点：<br/>dueDate = max(learnDate+intervals[i+1], today)<br/>生成新的 pending ReviewTask
+        RR->>DB: 写入新 reviewTask（若无下一节点则不写）
+    end
+    CS->>Rep: 重查近期打卡记录
+    Rep-->>CS: CheckInRecord[]
+    CS->>St: calcStreak(records, today) + calcWeekStrip(...)
+    St-->>CS: streak / weekStrip
+    CS-->>TL: 更新任务 done 状态与统计
+    TL->>SB: 播放 ⭐+1 飞入动效（今日进度 2/5）
+    Note over TL,SB: 补卡：当日取消勾选 → undoCheckIn 删除该条记录<br/>（仅允许操作「今天」的记录，历史日不可改）
+
+%% 4.3 错题录入 → 进入复习队列流程
+sequenceDiagram
+    autonumber
+    actor P as 家长
+    participant MF as MistakeFormDialog
+    participant IP as MistakeImagePicker
+    participant MS as useMistakeStore
+    participant ImgRep as ImageRepository
+    participant MRep as MistakeRepository
+    participant RS as useReviewStore
+    participant Sch as ReviewScheduler(纯函数)
+    participant DB as IndexedDB
+
+    P->>MF: 打开录入弹窗（科目/题目文字/原因标签/知识点）
+    opt 添加照片
+        P->>IP: 选择/拍摄图片
+        IP->>IP: image.ts Canvas 压缩（长边≤1280px）
+        IP-->>MF: 预览压缩后 Blob 列表
+    end
+    MF->>MF: 校验（科目必填、题目文字与图片至少一项）
+    MF->>MS: createMistake(dto, imageBlobs, addToReview?)
+    opt 有图片
+        MS->>ImgRep: create({blob, mimeType}) × N
+        ImgRep->>DB: 写 images store
+        ImgRep-->>MS: imageIds[]
+    end
+    MS->>MRep: create(Mistake{imageIds, masteryStatus='pending'})
+    MRep->>DB: 写 mistakes
+    opt 勾选「加入复习计划」
+        MS->>RS: createReviewItem({sourceType:'mistake', sourceId: mistake.id, title=题目摘要, intervals=默认})
+        RS->>Sch: buildFirstTask(item)
+        Sch-->>RS: ReviewTask(intervalIndex=0)
+        RS->>DB: 写 reviewItems + reviewTasks
+        Note over RS: 次日到期，自动出现在今日/打卡页复习区
+    end
+    MS-->>MF: 关闭弹窗，刷新错题列表（可按科目/知识点/时间筛选）

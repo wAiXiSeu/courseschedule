@@ -1,0 +1,210 @@
+classDiagram
+    direction LR
+
+    class BaseEntity {
+        +id: string
+        +childId: string
+        +createdAt: number
+        +updatedAt: number
+    }
+
+    class ChildProfile {
+        +name: string
+        +avatarEmoji: string
+        +gradeLevel?: string
+    }
+
+    class Course {
+        +name: string
+        +type: 'school'|'extracurricular'
+        +location?: string
+        +color: string
+        +note?: string
+    }
+
+    class ScheduleRule {
+        +courseId: string
+        +weekday: 0..6
+        +startTime: HHmm
+        +endTime: HHmm
+        +repeatType: 'weekly'
+        +effectiveFrom: ISODate
+        +effectiveUntil?: ISODate
+        +isActive: boolean
+    }
+
+    class CourseOccurrence {
+        +ruleId: string
+        +courseId: string
+        +courseName: string
+        +date: ISODate
+        +startTime: HHmm
+        +endTime: HHmm
+    }
+
+    class LearningPlan {
+        +title: string
+        +description?: string
+        +subject: string
+        +startDate: ISODate
+        +endDate: ISODate
+        +status: 'active'|'completed'|'archived'
+    }
+
+    class PlanTask {
+        +planId: string
+        +title: string
+        +frequency: 'daily'|'weekly'|'once'
+        +weekdays?: Weekday[]
+        +specificDate?: ISODate
+        +isActive: boolean
+    }
+
+    class ReviewItem {
+        +title: string
+        +subject: string
+        +learnDate: ISODate
+        +intervals: number[]
+        +sourceType: 'manual'|'mistake'
+        +sourceId?: string
+    }
+
+    class ReviewTask {
+        +reviewItemId: string
+        +intervalIndex: number
+        +dueDate: ISODate
+        +status: 'pending'|'done'|'skipped'
+        +doneAt?: number
+    }
+
+    class CheckInRecord {
+        +refType: 'plan_task'|'review_task'
+        +refId: string
+        +date: ISODate
+        +doneAt: number
+        +isMakeup: boolean
+    }
+
+    class Mistake {
+        +subject: string
+        +knowledgePoints: string[]
+        +questionText: string
+        +imageIds: string[]
+        +reasonTags: string[]
+        +mistakeDate: ISODate
+        +masteryStatus: 'pending'|'mastered'
+    }
+
+    class MistakeImage {
+        +id: string
+        +blob: Blob
+        +mimeType: string
+    }
+
+    class IntervalTemplate {
+        +name: string
+        +subject?: string
+        +intervals: number[]
+    }
+
+    class TaskView {
+        +key: string
+        +title: string
+        +sourceLabel: string
+        +refType: string
+        +refId: string
+        +done: boolean
+        +due?: boolean
+    }
+
+    class TodayViewData {
+        +date: ISODate
+        +courses: CourseOccurrence[]
+        +tasks: TaskView[]
+        +todayDone: number
+        +todayTotal: number
+        +streak: number
+        +weekStrip: boolean[]
+    }
+
+    class Repository~T~ {
+        <<interface>>
+        +getById(id: string) Promise~T|undefined~
+        +listByChild(childId: string) Promise~T[]~
+        +create(entity: T) Promise~T~
+        +update(entity: T) Promise~T~
+        +remove(id: string) Promise~void~
+    }
+
+    class ReviewScheduler {
+        <<domain service 纯函数>>
+        +buildFirstTask(item: ReviewItem) ReviewTask
+        +buildNextTask(item: ReviewItem, completedIndex: number) ReviewTask?
+        +computeDueDate(item: ReviewItem, intervalIndex: number) ISODate
+    }
+
+    class OccurrenceExpander {
+        <<domain service 纯函数>>
+        +expandForDate(rules: ScheduleRule[], courses: Course[], date: ISODate) CourseOccurrence[]
+        +expandForWeek(rules: ScheduleRule[], courses: Course[], weekStart: ISODate) CourseOccurrence[][]
+    }
+
+    class StreakCalculator {
+        <<domain service 纯函数>>
+        +calcStreak(records: CheckInRecord[], today: ISODate) number
+        +calcWeekStrip(records: CheckInRecord[], today: ISODate) boolean[]
+        +calcTodayRate(records: CheckInRecord[], totalTasks: number) number
+    }
+
+    class TodayAggregator {
+        <<domain service 纯函数>>
+        +aggregate(date: ISODate, input: TodayInput) TodayViewData
+    }
+
+    class CheckinService {
+        <<store action 编排>>
+        +checkIn(childId, refType, refId, date) Promise~void~
+        +undoCheckIn(recordId) Promise~void~
+    }
+
+    class MistakeService {
+        <<store action 编排>>
+        +createWithImages(dto, images) Promise~Mistake~
+        +markMastered(id) Promise~void~
+        +addToReview(mistakeId) Promise~ReviewItem~
+    }
+
+    BaseEntity <|-- ChildProfile
+    BaseEntity <|-- Course
+    BaseEntity <|-- ScheduleRule
+    BaseEntity <|-- LearningPlan
+    BaseEntity <|-- PlanTask
+    BaseEntity <|-- ReviewItem
+    BaseEntity <|-- ReviewTask
+    BaseEntity <|-- CheckInRecord
+    BaseEntity <|-- Mistake
+    BaseEntity <|-- IntervalTemplate
+
+    Course "1" --> "*" ScheduleRule : 拥有排课规则
+    ScheduleRule "*" --> "*" CourseOccurrence : 按日期展开
+    CourseOccurrence "*" --> "1" Course : 引用课程信息
+    LearningPlan "1" --> "*" PlanTask : 拆解为任务
+    ReviewItem "1" --> "*" ReviewTask : 惰性生成节点
+    Mistake "0..1" --> "0..1" ReviewItem : 转为复习内容 sourceId
+    Mistake "*" --> "*" MistakeImage : imageIds
+    IntervalTemplate "0..1" --> "*" ReviewItem : P1 模板引用
+    CheckInRecord "*" --> "1" PlanTask : refId (refType=plan_task)
+    CheckInRecord "*" --> "1" ReviewTask : refId (refType=review_task)
+    TodayViewData *-- "*" TaskView
+    TodayViewData *-- "*" CourseOccurrence
+
+    Repository~T~ <|.. ReviewRepository : data 层实现
+    Repository~T~ <|.. MistakeRepository : data 层实现
+    ReviewScheduler ..> ReviewItem : 使用
+    ReviewScheduler ..> ReviewTask : 产出
+    OccurrenceExpander ..> ScheduleRule : 使用
+    StreakCalculator ..> CheckInRecord : 使用
+    TodayAggregator ..> TodayViewData : 产出
+    CheckinService ..> CheckInRecord : 写入
+    MistakeService ..> Mistake : 写入
+    MistakeService ..> ReviewScheduler : 触发复习任务生成

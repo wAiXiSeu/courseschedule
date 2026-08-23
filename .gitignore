@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+.cloudfunction/
+*.log
+.DS_Store
+.env.local
+.vscode/
+.idea/

@@ -1,0 +1,26 @@
+<!-- 学习计划页面 -->
+<view class="container">
+  <view class="header">
+    <text class="page-title">学习计划</text>
+  </view>
+
+  <view wx:if="{{plans.length === 0}}" class="empty-card card">
+    <text class="empty-text">暂无学习计划</text>
+    <text class="empty-hint">家长可以在管理后台创建学习计划</text>
+  </view>
+
+  <view
+    wx:for="{{plans}}"
+    wx:key="id"
+    class="card plan-card"
+    bind:tap="onViewPlan"
+    data-id="{{item.id}}"
+  >
+    <text class="plan-name">{{item.name}}</text>
+    <text class="plan-course">{{item.courseName}}</text>
+    <text class="plan-date">{{item.startDate}} ~ {{item.endDate}}</text>
+    <view class="plan-progress">
+      <view class="progress-bar" style="width: {{item.progress}}%;"></view>
+    </view>
+  </view>
+</view>

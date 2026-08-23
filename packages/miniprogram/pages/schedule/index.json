@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "课程表",
+  "usingComponents": {
+    "course-slot": "/components/course-slot/index",
+    "week-strip": "/components/week-strip/index"
+  }
+}

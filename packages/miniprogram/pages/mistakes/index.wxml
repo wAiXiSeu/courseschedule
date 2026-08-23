@@ -1,0 +1,26 @@
+<!-- 错题本页面 -->
+<view class="container">
+  <view class="header">
+    <text class="page-title">错题本</text>
+  </view>
+
+  <view wx:if="{{mistakes.length === 0}}" class="empty-card card">
+    <text class="empty-text">暂无错题记录</text>
+    <text class="empty-hint">家长可以在管理后台添加错题</text>
+  </view>
+
+  <view
+    wx:for="{{mistakes}}"
+    wx:key="id"
+    class="card mistake-card"
+    bind:tap="onViewMistake"
+    data-id="{{item.id}}"
+  >
+    <view class="mistake-header">
+      <text class="mistake-course" style="color: {{item.color}};">{{item.courseName}}</text>
+      <text wx:if="{{item.resolved}}" class="resolved-tag">已掌握</text>
+    </view>
+    <text class="mistake-content">{{item.content}}</text>
+    <text class="mistake-date">{{item.createdAt}}</text>
+  </view>
+</view>

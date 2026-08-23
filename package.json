@@ -1,0 +1,16 @@
+{
+  "name": "courseschedule-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "小朋友课程表与学习管理 Monorepo",
+  "scripts": {
+    "dev": "pnpm -C packages/web dev",
+    "build": "pnpm -C packages/shared build && pnpm -C packages/web build",
+    "lint": "pnpm -C packages/web lint",
+    "clean": "pnpm -r exec rm -rf dist node_modules"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}

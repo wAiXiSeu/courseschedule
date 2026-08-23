@@ -1,0 +1,100 @@
+/**
+ * 课程色块组件样式
+ * 儿童友好风格：大圆角、鲜明色彩、柔和阴影
+ */
+
+:host {
+  display: block;
+  box-sizing: border-box;
+}
+
+.course-slot {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20rpx 22rpx;
+  border-radius: 18rpx;
+  color: #ffffff;
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.course-slot::after {
+  content: '';
+  position: absolute;
+  right: -20rpx;
+  top: -20rpx;
+  width: 80rpx;
+  height: 80rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+}
+
+.slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.slot-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #ffffff;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 1rpx;
+}
+
+.slot-time {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.95);
+  margin-left: 12rpx;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.slot-location {
+  display: flex;
+  align-items: center;
+  margin-top: 10rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.location-icon {
+  font-size: 22rpx;
+  margin-right: 6rpx;
+}
+
+.location-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 紧凑模式（周视图色块） */
+.course-slot.compact {
+  padding: 12rpx 14rpx;
+  border-radius: 14rpx;
+}
+
+.course-slot.compact .slot-name {
+  font-size: 24rpx;
+}
+
+.course-slot.compact .slot-time {
+  font-size: 20rpx;
+}
+
+.course-slot.compact::after {
+  width: 50rpx;
+  height: 50rpx;
+  right: -14rpx;
+  top: -14rpx;
+}

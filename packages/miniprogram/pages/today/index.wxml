@@ -1,0 +1,114 @@
+<!-- 今日页面 —— 课程时间轴 + 任务清单 -->
+<view class="page-container">
+  <!-- 顶部信息栏 -->
+  <view class="header-card">
+    <view class="header-top">
+      <text class="header-emoji">📅</text>
+      <text class="header-title">今天是 {{todayDate}} {{weekdayLabel}}</text>
+    </view>
+    <view class="header-stats">
+      <view class="stat-badge fire">
+        <text class="stat-emoji">🔥</text>
+        <text class="stat-text">累计打卡 {{streak}} 天</text>
+      </view>
+      <view class="stat-badge check">
+        <text class="stat-emoji">✅</text>
+        <text class="stat-text">今日任务 {{todayDone}}/{{todayTotal}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 本周打卡格子 -->
+  <view class="section-card" wx:if="{{weekStrip.length > 0}}">
+    <view class="section-title-row">
+      <text class="section-emoji">🗓️</text>
+      <text class="section-title">本周打卡</text>
+    </view>
+    <view class="week-strip-row">
+      <view wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="index" class="day-cell">
+        <view class="day-circle {{weekStrip[index] ? 'checked' : 'unchecked'}}">
+          <text wx:if="{{weekStrip[index]}}" class="day-check">✓</text>
+        </view>
+        <text class="day-label">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日课程时间轴 -->
+  <view class="section">
+    <text class="section-heading">▍今天的课程</text>
+
+    <view class="timeline" wx:if="{{courses.length > 0}}">
+      <view wx:for="{{courses}}" wx:key="ruleId" class="timeline-item">
+        <view class="timeline-left">
+          <view class="timeline-dot" style="background-color: {{item.color}};"></view>
+          <view class="timeline-line" wx:if="{{index < courses.length - 1}}"></view>
+        </view>
+        <view class="timeline-right">
+          <view class="timeline-time">
+            <text class="time-text">{{item.startTime}}</text>
+            <text class="time-sep"> - </text>
+            <text class="time-text">{{item.endTime}}</text>
+          </view>
+          <course-slot
+            name="{{item.courseName}}"
+            startTime="{{item.startTime}}"
+            endTime="{{item.endTime}}"
+            location="{{item.location}}"
+            color="{{item.color}}"
+          />
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{courses.length === 0 && !loading}}">
+      <text class="empty-emoji">🎈</text>
+      <text class="empty-text">今天没有课程，好好休息吧！</text>
+    </view>
+  </view>
+
+  <!-- 分割线 -->
+  <view class="divider" wx:if="{{tasks.length > 0 || courses.length > 0}}"></view>
+
+  <!-- 今日任务清单 -->
+  <view class="section">
+    <text class="section-heading">▍今天的任务</text>
+
+    <view class="task-list" wx:if="{{tasks.length > 0}}">
+      <view
+        wx:for="{{tasks}}"
+        wx:key="key"
+        class="task-card {{item.done ? 'done' : ''}} {{item.due ? 'overdue' : ''}}"
+        bind:tap="onToggleTask"
+        data-ref-type="{{item.refType}}"
+        data-ref-id="{{item.refId}}"
+        data-done="{{item.done}}"
+      >
+        <view class="task-checkbox">
+          <view class="checkbox-inner {{item.done ? 'checked' : ''}}">
+            <text wx:if="{{item.done}}" class="check-mark">✓</text>
+          </view>
+        </view>
+        <view class="task-info">
+          <text class="task-title {{item.done ? 'line-through' : ''}}">{{item.title}}</text>
+          <view class="task-meta">
+            <text class="task-source {{item.sourceLabel === '学习计划' ? 'source-plan' : 'source-review'}}">
+              {{item.sourceLabel}}
+            </text>
+            <text wx:if="{{item.due && !item.done}}" class="task-due-badge">已到期</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{tasks.length === 0 && !loading}}">
+      <text class="empty-emoji">📝</text>
+      <text class="empty-text">暂无任务</text>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

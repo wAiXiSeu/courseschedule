@@ -1,0 +1,69 @@
+/**
+ * 错题本页面样式
+ */
+.header {
+  padding: 20rpx 0;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.empty-card {
+  text-align: center;
+  padding: 80rpx 40rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #666;
+  display: block;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #999;
+  display: block;
+  margin-top: 16rpx;
+}
+
+.mistake-card {
+  position: relative;
+}
+
+.mistake-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.mistake-course {
+  font-size: 26rpx;
+  font-weight: bold;
+}
+
+.resolved-tag {
+  font-size: 22rpx;
+  color: #43A047;
+  background: #E8F5E9;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.mistake-content {
+  font-size: 28rpx;
+  color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mistake-date {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  margin-top: 12rpx;
+}

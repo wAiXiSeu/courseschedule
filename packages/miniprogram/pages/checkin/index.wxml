@@ -1,0 +1,37 @@
+<!-- 打卡页面 -->
+<view class="container">
+  <view class="card">
+    <text class="title">今日打卡</text>
+    <text class="date">{{today}}</text>
+  </view>
+
+  <view class="card">
+    <text class="subtitle">选择课程</text>
+    <picker mode="selector" range="{{checkInList}}" bindchange="onCourseChange">
+      <view class="picker-btn">
+        <text wx:if="{{selectedCourseId}}">已选择</text>
+        <text wx:else class="placeholder">请选择课程</text>
+      </view>
+    </picker>
+
+    <text class="subtitle" style="margin-top: 20rpx;">学习时长（分钟）</text>
+    <input
+      type="number"
+      class="input"
+      placeholder="请输入学习时长"
+      bindinput="onDurationInput"
+      value="{{duration}}"
+    />
+
+    <button class="btn-primary" style="margin-top: 40rpx;" bind:tap="onSubmitCheckIn">
+      提交打卡
+    </button>
+  </view>
+
+  <view class="card">
+    <text class="title">打卡历史</text>
+    <view wx:if="{{checkInList.length === 0}}" class="empty">
+      <text>暂无打卡记录</text>
+    </view>
+  </view>
+</view>

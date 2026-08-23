@@ -1,0 +1,11 @@
+<!-- 课程色块组件 -->
+<view class="course-slot {{compact ? 'compact' : ''}}" style="{{_bgStyle}}">
+  <view class="slot-header">
+    <text class="slot-name">{{name}}</text>
+    <text class="slot-time" wx:if="{{startTime && endTime}}">{{startTime}}-{{endTime}}</text>
+  </view>
+  <view class="slot-location" wx:if="{{!compact && location}}">
+    <text class="location-icon">📍</text>
+    <text class="location-text">{{location}}</text>
+  </view>
+</view>

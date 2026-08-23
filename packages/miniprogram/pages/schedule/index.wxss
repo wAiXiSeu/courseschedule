@@ -1,0 +1,120 @@
+/**
+ * 课程表页面样式 —— 7 列网格布局
+ * 儿童友好风格
+ */
+
+.page-container {
+  padding: 20rpx 20rpx;
+  padding-bottom: 40rpx;
+  background: #f5f7fa;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ─── 星期表头 ─── */
+
+.weekday-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 12rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.weekday-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8rpx 4rpx;
+  border-radius: 12rpx;
+  transition: all 0.2s;
+}
+
+.weekday-cell.today {
+  background: #1E88E5;
+}
+
+.weekday-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4rpx;
+}
+
+.weekday-cell.today .weekday-label {
+  color: #ffffff;
+}
+
+.weekday-date {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #999;
+}
+
+.weekday-cell.today .weekday-date {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ─── 课程网格 ─── */
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 12rpx 8rpx;
+  min-height: 400rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+
+.day-column.today-column {
+  border-color: #1E88E5;
+  background: #F3F8FE;
+  box-shadow: 0 4rpx 16rpx rgba(30, 136, 229, 0.15);
+}
+
+.course-wrapper {
+  margin-bottom: 4rpx;
+}
+
+/* ─── 无课程 ─── */
+
+.no-course {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0;
+}
+
+.no-course-text {
+  font-size: 24rpx;
+  color: #BDBDBD;
+  font-weight: 500;
+}
+
+/* ─── 加载状态 ─── */
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80rpx 0;
+}
+
+.loading-text {
+  font-size: 30rpx;
+  color: #999;
+}
