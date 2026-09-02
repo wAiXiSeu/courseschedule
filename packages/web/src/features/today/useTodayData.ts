@@ -13,16 +13,11 @@ import {
   aggregateTodayView,
 } from '@courseschedule/shared';
 import { useScheduleStore, courseRepo, ruleRepo } from '../../stores/useScheduleStore';
+import { cancellationKey } from '../../data/repositories/courseCancellationRepository';
 import { useAppStore } from '../../stores/useAppStore';
-import { PlanRepository, PlanTaskRepository } from '../../data/repositories/planRepository';
-import { ReviewTaskRepository } from '../../data/repositories/reviewRepository';
-import { CheckinRepository } from '../../data/repositories/checkinRepository';
-
-/** Repository 实例 */
-const planRepo = new PlanRepository();
-const planTaskRepo = new PlanTaskRepository();
-const reviewTaskRepo = new ReviewTaskRepository();
-const checkinRepo = new CheckinRepository();
+import { planTaskRepo } from '../../stores/usePlanStore';
+import { reviewTaskRepo } from '../../stores/useReviewStore';
+import { checkinRepo } from '../../stores/useCheckinStore';
 
 /** Hook 返回值 */
 interface TodayDataResult {
@@ -79,6 +74,16 @@ export const useTodayData = (): TodayDataResult => {
         reviewTasks,
         checkinRecords,
       });
+
+      // 当天已取消的课程不再出现在今日时间轴
+      const canceledRules = new Set(
+        useScheduleStore.getState().cancellations.map((c) =>
+          cancellationKey(c.ruleId, c.date)
+        )
+      );
+      data.courses = data.courses.filter(
+        (o) => !canceledRules.has(cancellationKey(o.ruleId, o.date))
+      );
 
       setTodayData(data);
     } catch (err) {

@@ -8,23 +8,30 @@ import { create } from 'zustand';
 import {
   type Course,
   type ScheduleRule,
+  type CourseCancellation,
   type ISODate,
   genId,
   expandRulesToOccurrences,
 } from '@courseschedule/shared';
 import { CourseRepository } from '../data/repositories/courseRepository';
 import { ScheduleRuleRepository } from '../data/repositories/scheduleRuleRepository';
+import { CourseCancellationRepository } from '../data/repositories/courseCancellationRepository';
 import { useAppStore } from './useAppStore';
+import { useSubjectStore } from './useSubjectStore';
 
 /** 课程表单数据（用于创建/编辑） */
 export interface CourseFormData {
-  name: string;
   type: Course['type'];
   location?: string;
+  /** 科目 id（Course.color），课程标题即该科目名 */
   color: string;
   note?: string;
   rules: ScheduleRuleFormData[];
 }
+
+/** 按科目 id 取中文名；科目被删除时退回原 id，保证历史数据可读 */
+const subjectName = (subjectId: string): string =>
+  useSubjectStore.getState().subjects.find((s) => s.id === subjectId)?.name ?? subjectId;
 
 /** 排课规则表单数据 */
 export interface ScheduleRuleFormData {
@@ -41,6 +48,8 @@ interface ScheduleState {
   courses: Course[];
   /** 排课规则列表 */
   rules: ScheduleRule[];
+  /** 课程取消记录（某节课在某天被取消） */
+  cancellations: CourseCancellation[];
   /** 加载状态 */
   loading: boolean;
   /** 错误信息 */
@@ -56,14 +65,24 @@ interface ScheduleState {
   deleteCourse: (courseId: string) => Promise<void>;
   /** 切换课程启用状态 */
   toggleCourseActive: (courseId: string) => Promise<void>;
+  /** 取消某节课：备注原因（已存在则更新原因） */
+  cancelOccurrence: (
+    courseId: string,
+    ruleId: string,
+    date: ISODate,
+    reason: string
+  ) => Promise<void>;
+  /** 恢复某节课（删除其取消记录） */
+  uncancelOccurrence: (ruleId: string, date: ISODate) => Promise<void>;
 }
 
-/** Repository 实例（内存实现） */
+/** Repository 实例 */
 const courseRepo = new CourseRepository();
 const ruleRepo = new ScheduleRuleRepository();
+const cancellationRepo = new CourseCancellationRepository();
 
 // 导出供其他模块使用
-export { courseRepo, ruleRepo };
+export { courseRepo, ruleRepo, cancellationRepo };
 
 /**
  * 课程表 Store
@@ -71,6 +90,7 @@ export { courseRepo, ruleRepo };
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
   courses: [],
   rules: [],
+  cancellations: [],
   loading: false,
   error: null,
 
@@ -78,11 +98,12 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     const childId = useAppStore.getState().childId;
     set({ loading: true, error: null });
     try {
-      const [courses, rules] = await Promise.all([
+      const [courses, rules, cancellations] = await Promise.all([
         courseRepo.listByChild(childId),
         ruleRepo.listByChild(childId),
+        cancellationRepo.listByChild(childId),
       ]);
-      set({ courses, rules, loading: false });
+      set({ courses, rules, cancellations, loading: false });
     } catch (err) {
       set({ error: (err as Error).message, loading: false });
     }
@@ -98,7 +119,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       childId,
       createdAt: now,
       updatedAt: now,
-      name: data.name,
+      name: subjectName(data.color),
       type: data.type,
       location: data.location,
       color: data.color,
@@ -137,7 +158,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     // 更新课程基本信息
     const updatedCourse: Course = {
       ...course,
-      name: data.name,
+      name: subjectName(data.color),
       type: data.type,
       location: data.location,
       color: data.color,
@@ -172,8 +193,9 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   },
 
   deleteCourse: async (courseId) => {
-    // 先删除关联的规则
+    // 先删除关联的规则与取消记录
     await ruleRepo.removeByCourse(courseId);
+    await cancellationRepo.removeByCourse(courseId);
     // 再删除课程
     await courseRepo.remove(courseId);
     await get().loadAll();
@@ -190,6 +212,32 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         updatedAt: Date.now(),
       });
     }
+    await get().loadAll();
+  },
+
+  cancelOccurrence: async (courseId, ruleId, date, reason) => {
+    const childId = useAppStore.getState().childId;
+    const existing = await cancellationRepo.findByRuleAndDate(childId, ruleId, date);
+    if (existing) {
+      await cancellationRepo.update({ ...existing, reason, updatedAt: Date.now() });
+    } else {
+      const now = Date.now();
+      await cancellationRepo.create({
+        id: genId(),
+        childId,
+        courseId,
+        ruleId,
+        date,
+        reason,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await get().loadAll();
+  },
+
+  uncancelOccurrence: async (ruleId, date) => {
+    await cancellationRepo.removeByRuleAndDate(ruleId, date);
     await get().loadAll();
   },
 }));

@@ -15,8 +15,6 @@ import {
   TextField,
   FormControl,
   InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Box,
   Typography,
@@ -30,12 +28,11 @@ import {
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {
-  SUBJECT_COLORS,
-  SUBJECT_LABELS,
   REASON_TAGS,
 } from '@courseschedule/shared';
 import type { Mistake, ISODate } from '@courseschedule/shared';
 import type { MistakeFormData } from '../../stores/useMistakeStore';
+import { SubjectSelect } from '../../components/SubjectSelect';
 
 /* ─── Props 接口 ─── */
 
@@ -49,9 +46,6 @@ interface MistakeFormDialogProps {
   /** 关闭回调 */
   onClose: () => void;
 }
-
-/** 科目选项列表 */
-const SUBJECTS = Object.keys(SUBJECT_COLORS);
 
 /** 获取当天日期 YYYY-MM-DD */
 function getTodayStr(): ISODate {
@@ -201,29 +195,13 @@ export const MistakeFormDialog: React.FC<MistakeFormDialogProps> = ({
           {/* 科目选择 */}
           <FormControl fullWidth required error={!!errors.subject}>
             <InputLabel>科目</InputLabel>
-            <Select
-              value={formData.subject}
+            <SubjectSelect
               label="科目"
+              value={formData.subject}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, subject: e.target.value }))
               }
-            >
-              {SUBJECTS.map((key) => (
-                <MenuItem key={key} value={key}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        bgcolor: SUBJECT_COLORS[key],
-                      }}
-                    />
-                    {SUBJECT_LABELS[key] || key}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
+            />
             {errors.subject && (
               <Typography variant="caption" color="error" sx={{ ml: 1.5, mt: 0.5 }}>
                 {errors.subject}

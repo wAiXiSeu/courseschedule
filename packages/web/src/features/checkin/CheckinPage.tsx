@@ -25,6 +25,7 @@ import { useCheckinData } from './useCheckinData';
 import { useCheckinStore } from '../../stores/useCheckinStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { StatsPanel } from './StatsPanel';
+import { T, BORDER, pageHeadingSx, sectionTitleSx } from '../../app/tokens';
 import type { TaskView, CheckinRefType, ISODate } from '@courseschedule/shared';
 
 /**
@@ -58,19 +59,11 @@ export const CheckinPage: React.FC = () => {
   return (
     <Box sx={{ pb: 2 }}>
       {/* 页面标题区 */}
-      <Box
-        sx={{
-          bgcolor: 'success.main',
-          color: 'white',
-          px: 3,
-          py: 3,
-          borderRadius: '0 0 24px 24px',
-        }}
-      >
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          ⭐ 今日打卡
+      <Box sx={{ px: 2.5, pt: 3, pb: 1 }}>
+        <Typography sx={pageHeadingSx}>
+          今日打卡
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+        <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600, mt: 1 }}>
           {formatDate(currentDate)}
         </Typography>
       </Box>
@@ -86,8 +79,8 @@ export const CheckinPage: React.FC = () => {
 
       {/* 今日任务列表 */}
       <Box sx={{ px: 2, mt: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          ▍今日任务
+        <Typography sx={{ ...sectionTitleSx, fontSize: '1.0625rem', mb: 1.5 }}>
+          今日任务
         </Typography>
 
         {checkinData.loading && (
@@ -97,21 +90,29 @@ export const CheckinPage: React.FC = () => {
         )}
 
         {!checkinData.loading && checkinData.todayTasks.length === 0 && (
-          <Paper elevation={0} sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
-            <Typography variant="h4" sx={{ mb: 1 }}>🎉</Typography>
-            <Typography color="text.secondary">今日暂无任务</Typography>
-          </Paper>
+          <Box
+            sx={{
+              p: 4,
+              textAlign: 'center',
+              borderRadius: 3.5,
+              bgcolor: T.paper,
+              border: BORDER,
+              boxShadow: `3px 3px 0 0 ${T.ink}`,
+            }}
+          >
+            <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600 }}>今日暂无任务</Typography>
+          </Box>
         )}
 
         {!checkinData.loading && checkinData.todayTasks.length > 0 && (
-          <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+          <Box sx={{ borderRadius: 3.5, overflow: 'hidden', bgcolor: T.paper, border: BORDER, boxShadow: `3px 3px 0 0 ${T.ink}` }}>
             <List disablePadding>
               {checkinData.todayTasks.map((task, index) => (
                 <React.Fragment key={task.key}>
                   <ListItem
                     sx={{
-                      bgcolor: task.done ? 'success.50' : 'transparent',
-                      transition: 'background-color 0.3s',
+                      bgcolor: task.done ? '#EAF8F0' : 'transparent',
+                      transition: 'background-color 0.2s',
                       py: 2,
                     }}
                   >
@@ -119,13 +120,14 @@ export const CheckinPage: React.FC = () => {
                       <Checkbox
                         checked={task.done}
                         onChange={() => handleToggleCheckin(task)}
-                        icon={<StarBorderIcon sx={{ fontSize: 32 }} />}
+                        icon={<StarBorderIcon sx={{ fontSize: 28, color: '#C9C1AF' }} />}
                         checkedIcon={
                           <StarIcon
                             sx={{
-                              fontSize: 32,
-                              color: '#FFD700',
-                              filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))',
+                              fontSize: 28,
+                              color: T.yellow,
+                              stroke: T.ink,
+                              strokeWidth: 1,
                             }}
                           />
                         }
@@ -137,9 +139,9 @@ export const CheckinPage: React.FC = () => {
                           <Typography
                             variant="body1"
                             sx={{
-                              fontWeight: 600,
+                              fontWeight: 700,
                               textDecoration: task.done ? 'line-through' : 'none',
-                              color: task.done ? 'text.secondary' : 'text.primary',
+                              color: task.done ? T.textMuted : T.ink,
                             }}
                           >
                             {task.title}
@@ -148,14 +150,14 @@ export const CheckinPage: React.FC = () => {
                             label={task.sourceLabel}
                             size="small"
                             color={task.sourceLabel === '学习计划' ? 'primary' : 'secondary'}
-                            sx={{ fontSize: '0.7rem' }}
+                            sx={{ fontSize: '0.7rem', height: 22 }}
                           />
                           {task.due && (
                             <Chip
                               label="到期"
                               size="small"
                               color="warning"
-                              sx={{ fontSize: '0.7rem' }}
+                              sx={{ fontSize: '0.7rem', height: 22 }}
                             />
                           )}
                         </Box>
@@ -166,7 +168,7 @@ export const CheckinPage: React.FC = () => {
                 </React.Fragment>
               ))}
             </List>
-          </Paper>
+          </Box>
         )}
       </Box>
     </Box>

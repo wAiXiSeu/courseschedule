@@ -19,8 +19,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import { SUBJECT_COLORS, REVIEW_INTERVALS } from '@courseschedule/shared';
+import { REVIEW_INTERVALS } from '@courseschedule/shared';
 import type { ReviewItem } from '@courseschedule/shared';
+import { useSubjectResolver } from '../../stores/useSubjectStore';
 
 interface ReviewCardProps {
   /** 复习项数据 */
@@ -48,8 +49,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   onEdit,
   onDelete,
 }) => {
-  // 获取科目颜色
-  const subjectColor = SUBJECT_COLORS[item.subject] || SUBJECT_COLORS.other;
+  // 解析科目（中文名 + 颜色）
+  const resolve = useSubjectResolver();
+  const subject = resolve(item.subject);
+  const subjectColor = subject.color;
 
   // 计算进度百分比
   const progress = totalRounds > 0 ? Math.round((doneRounds / totalRounds) * 100) : 0;
@@ -90,7 +93,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
         {/* 科目标签 */}
         <Chip
-          label={item.subject}
+          label={subject.name}
           size="small"
           sx={{
             bgcolor: subjectColor,
@@ -102,7 +105,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
         {/* 学习日期 */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          📖 学习日期：{formatDate(item.learnDate)}
+          学习日期：{formatDate(item.learnDate)}
         </Typography>
 
         {/* 复习进度节点 */}
@@ -162,24 +165,30 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ pt: 0 }}>
-        <IconButton
-          size="small"
-          color="primary"
-          onClick={() => onEdit?.(item)}
-          title="编辑"
-        >
-          <EditIcon />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="error"
-          onClick={() => onDelete?.(item)}
-          title="删除"
-        >
-          <DeleteIcon />
-        </IconButton>
-      </CardActions>
+      {(onEdit || onDelete) && (
+        <CardActions sx={{ pt: 0 }}>
+          {onEdit && (
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => onEdit(item)}
+              title="编辑"
+            >
+              <EditIcon />
+            </IconButton>
+          )}
+          {onDelete && (
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => onDelete(item)}
+              title="删除"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
+        </CardActions>
+      )}
     </Card>
   );
 };

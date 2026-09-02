@@ -24,12 +24,14 @@ import { usePlanData } from './usePlanData';
 import { useReviewData } from './useReviewData';
 import { usePlanStore } from '../../stores/usePlanStore';
 import { useReviewStore } from '../../stores/useReviewStore';
+import { useIsParent } from '../../stores/useAppStore';
 import { PlanCard } from './PlanCard';
 import { PlanFormDialog } from './PlanFormDialog';
 import { PlanTaskFormDialog } from './PlanTaskFormDialog';
 import { ReviewCard } from './ReviewCard';
 import { ReviewItemFormDialog } from './ReviewItemFormDialog';
 import type { LearningPlan, ReviewItem } from '@courseschedule/shared';
+import { T, pageHeadingSx } from '../../app/tokens';
 
 /**
  * 学习计划页面
@@ -68,6 +70,8 @@ export const PlansPage: React.FC = () => {
   const createReviewItem = useReviewStore((s) => s.createItem);
   const updateReviewItem = useReviewStore((s) => s.updateItem);
   const deleteReviewItem = useReviewStore((s) => s.deleteItem);
+
+  const isParent = useIsParent();
 
   // 处理学习计划提交
   const handlePlanSubmit = async (data: any) => {
@@ -121,34 +125,21 @@ export const PlansPage: React.FC = () => {
   return (
     <Box sx={{ pb: 2 }}>
       {/* 页面标题区 */}
-      <Box
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          px: 3,
-          py: 3,
-          borderRadius: '0 0 24px 24px',
-        }}
-      >
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          📋 学习计划
+      <Box sx={{ px: 2.5, pt: 3, pb: 1 }}>
+        <Typography sx={pageHeadingSx}>
+          学习计划
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+        <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600, mt: 1 }}>
           制定计划，跟踪进度，坚持复习
         </Typography>
       </Box>
 
       {/* Tab 切换 */}
-      <Box sx={{ px: 2, mt: 2 }}>
+      <Box sx={{ px: 2.5, mt: 1 }}>
         <Tabs
           value={activeTab}
           onChange={(_, v) => setActiveTab(v)}
           variant="fullWidth"
-          sx={{
-            bgcolor: 'grey.100',
-            borderRadius: 2,
-            '& .MuiTab-root': { fontWeight: 600 },
-          }}
         >
           <Tab label={`学习计划 (${planData.plans.length})`} />
           <Tab label={`复习计划 (${reviewData.items.length})`} />
@@ -165,10 +156,11 @@ export const PlansPage: React.FC = () => {
           )}
           {!planData.loading && planData.plans.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h4" sx={{ mb: 1 }}>📋</Typography>
               <Typography color="text.secondary">暂无学习计划</Typography>
-              <Typography variant="body2" color="text.secondary">
-                点击下方按钮创建第一个学习计划
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {isParent
+                  ? '点击下方按钮创建第一个学习计划'
+                  : '家长还没有安排学习计划'}
               </Typography>
             </Box>
           )}
@@ -179,21 +171,25 @@ export const PlansPage: React.FC = () => {
               progress={planData.getPlanProgress(plan)}
               todayTaskCount={planData.getTodayTaskCount(plan.id)}
               totalTaskCount={planData.getTasksByPlan(plan.id).length}
-              onEdit={handleEditPlan}
-              onDelete={(p) => handleDeleteConfirm('plan', p.id, p.title)}
-              onAddTask={handleAddTask}
+              onEdit={isParent ? handleEditPlan : undefined}
+              onDelete={
+                isParent ? (p) => handleDeleteConfirm('plan', p.id, p.title) : undefined
+              }
+              onAddTask={isParent ? handleAddTask : undefined}
             />
           ))}
-          <Fab
-            color="primary"
-            sx={{ position: 'fixed', bottom: 88, right: 24 }}
-            onClick={() => {
-              setEditingPlan(null);
-              setPlanDialogOpen(true);
-            }}
-          >
-            <AddIcon />
-          </Fab>
+          {isParent && (
+            <Fab
+              color="primary"
+              sx={{ position: 'fixed', bottom: 88, right: 24 }}
+              onClick={() => {
+                setEditingPlan(null);
+                setPlanDialogOpen(true);
+              }}
+            >
+              <AddIcon />
+            </Fab>
+          )}
         </Box>
       )}
 
@@ -207,10 +203,11 @@ export const PlansPage: React.FC = () => {
           )}
           {!reviewData.loading && reviewData.items.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h4" sx={{ mb: 1 }}>📖</Typography>
               <Typography color="text.secondary">暂无复习内容</Typography>
-              <Typography variant="body2" color="text.secondary">
-                录入学习内容，系统自动安排复习计划
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {isParent
+                  ? '录入学习内容，系统自动安排复习计划'
+                  : '家长还没有安排复习内容'}
               </Typography>
             </Box>
           )}
@@ -223,17 +220,23 @@ export const PlansPage: React.FC = () => {
                 doneRounds={progress.done}
                 totalRounds={progress.total}
                 todayDueCount={reviewData.getTodayDueCount(item.id)}
-                onDelete={(i) => handleDeleteConfirm('review', i.id, i.title)}
+                onDelete={
+                  isParent
+                    ? (i) => handleDeleteConfirm('review', i.id, i.title)
+                    : undefined
+                }
               />
             );
           })}
-          <Fab
-            color="primary"
-            sx={{ position: 'fixed', bottom: 88, right: 24 }}
-            onClick={() => setReviewDialogOpen(true)}
-          >
-            <AddIcon />
-          </Fab>
+          {isParent && (
+            <Fab
+              color="primary"
+              sx={{ position: 'fixed', bottom: 88, right: 24 }}
+              onClick={() => setReviewDialogOpen(true)}
+            >
+              <AddIcon />
+            </Fab>
+          )}
         </Box>
       )}
 

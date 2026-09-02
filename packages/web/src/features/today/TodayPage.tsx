@@ -5,27 +5,27 @@
  */
 
 import React from 'react';
-import { Box, Typography, Paper, Chip, Divider } from '@mui/material';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { Box, Typography } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
 import { useTodayData } from './useTodayData';
 import { TodayTimeline } from './TodayTimeline';
 import { TodayTaskList } from './TodayTaskList';
+import { useCheckinStore } from '../../stores/useCheckinStore';
 import { useAppStore } from '../../stores/useAppStore';
+import { T, cardSx, pageHeadingSx, sectionTitleSx, BORDER } from '../../app/tokens';
 import type { TaskView } from '@courseschedule/shared';
 
 /**
  * 今日视图页面
  */
 export const TodayPage: React.FC = () => {
-  const { todayData, loading } = useTodayData();
+  const { todayData, loading, refresh } = useTodayData();
   const currentDate = useAppStore((s) => s.currentDate);
+  const checkin = useCheckinStore((s) => s.checkin);
 
-  // 打卡处理（T04 完善）
-  const handleCheckin = (task: TaskView) => {
-    console.log('打卡任务:', task);
-    // T04: 调用 useCheckinStore.checkIn()
+  const handleCheckin = async (task: TaskView) => {
+    await checkin(task.refType, task.refId, currentDate);
+    await refresh();
   };
 
   if (loading || !todayData) {
@@ -46,53 +46,24 @@ export const TodayPage: React.FC = () => {
 
   return (
     <Box sx={{ pb: 2 }}>
-      {/* 页面标题区 */}
-      <Box
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          px: 3,
-          py: 3,
-          borderRadius: '0 0 24px 24px',
-        }}
-      >
-        {/* 日期 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <CalendarTodayIcon />
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            今天是 {formatDateDisplay(date)} {weekdayLabel}
-          </Typography>
-        </Box>
-
-        {/* 统计信息 */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Chip
-            icon={<LocalFireDepartmentIcon />}
-            label={`累计打卡 ${streak} 天`}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              fontWeight: 600,
-              '& .MuiChip-icon': { color: '#FFD700' },
-            }}
-          />
-          <Chip
-            icon={<CheckCircleIcon />}
-            label={`今日任务 ${todayDone}/${todayTotal}`}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              fontWeight: 600,
-            }}
-          />
-        </Box>
+      {/* 页面标题区：荧光笔标题 */}
+      <Box sx={{ px: 2.5, pt: 3, pb: 1 }}>
+        <Typography sx={pageHeadingSx}>
+          今天是 {formatDateDisplay(date)}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: T.textMuted, mt: 1, fontWeight: 600 }}
+        >
+          {weekdayLabel} · 已打卡 {streak} 天 · 今日任务 {todayDone}/{todayTotal}
+        </Typography>
       </Box>
 
       {/* 本周打卡格子 */}
       <Box sx={{ px: 2, mt: 2 }}>
-        <Paper elevation={0} sx={{ p: 2, borderRadius: 3 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: 'text.secondary' }}>
-            📅 本周打卡
+        <Box sx={{ ...cardSx, p: 2 }}>
+          <Typography sx={{ ...sectionTitleSx, mb: 1.5 }}>
+            本周打卡
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-around' }}>
             {['一', '二', '三', '四', '五', '六', '日'].map((day, i) => (
@@ -107,43 +78,45 @@ export const TodayPage: React.FC = () => {
               >
                 <Box
                   sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '50%',
-                    bgcolor: weekStrip[i] ? 'success.main' : 'grey.200',
+                    width: 34,
+                    height: 34,
+                    borderRadius: 2,
+                    bgcolor: weekStrip[i] ? T.green : T.paper,
+                    border: BORDER,
+                    boxShadow: weekStrip[i] ? `2px 2px 0 0 ${T.ink}` : 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'all 0.3s',
                   }}
                 >
                   {weekStrip[i] && (
-                    <CheckCircleIcon sx={{ fontSize: 20, color: 'white' }} />
+                    <CheckIcon sx={{ fontSize: 20, color: '#fff', strokeWidth: 3 }} />
                   )}
                 </Box>
-                <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: weekStrip[i] ? T.ink : T.textMuted, fontWeight: 700 }}
+                >
                   {day}
                 </Typography>
               </Box>
             ))}
           </Box>
-        </Paper>
+        </Box>
       </Box>
 
       {/* 今日课程 */}
-      <Box sx={{ px: 2, mt: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          ▍今天的课程
+      <Box sx={{ px: 2, mt: 4 }}>
+        <Typography sx={{ ...sectionTitleSx, fontSize: '1.0625rem', mb: 1.5 }}>
+          今天的课程
         </Typography>
         <TodayTimeline courses={courses} />
       </Box>
 
-      <Divider sx={{ my: 3, mx: 2 }} />
-
       {/* 今日任务 */}
-      <Box sx={{ px: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          ▍今天的任务
+      <Box sx={{ px: 2, mt: 4 }}>
+        <Typography sx={{ ...sectionTitleSx, fontSize: '1.0625rem', mb: 1.5 }}>
+          今天的任务
         </Typography>
         <TodayTaskList tasks={tasks} onCheckin={handleCheckin} />
       </Box>

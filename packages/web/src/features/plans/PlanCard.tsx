@@ -19,8 +19,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { SUBJECT_COLORS } from '@courseschedule/shared';
 import type { LearningPlan } from '@courseschedule/shared';
+import { useSubjectResolver } from '../../stores/useSubjectStore';
 
 interface PlanCardProps {
   /** 学习计划数据 */
@@ -31,11 +31,11 @@ interface PlanCardProps {
   todayTaskCount: number;
   /** 任务总数 */
   totalTaskCount: number;
-  /** 点击编辑 */
+  /** 点击编辑；未传则不渲染该按钮 */
   onEdit?: (plan: LearningPlan) => void;
-  /** 点击删除 */
+  /** 点击删除；未传则不渲染该按钮 */
   onDelete?: (plan: LearningPlan) => void;
-  /** 点击添加任务 */
+  /** 点击添加任务；未传则不渲染该按钮 */
   onAddTask?: (plan: LearningPlan) => void;
 }
 
@@ -51,8 +51,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   onDelete,
   onAddTask,
 }) => {
-  // 获取科目颜色
-  const subjectColor = SUBJECT_COLORS[plan.subject] || SUBJECT_COLORS.other;
+  // 解析科目（中文名 + 颜色）
+  const resolve = useSubjectResolver();
+  const subject = resolve(plan.subject);
+  const subjectColor = subject.color;
 
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
@@ -93,7 +95,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
         {/* 科目标签 */}
         <Chip
-          label={plan.subject}
+          label={subject.name}
           size="small"
           sx={{
             bgcolor: subjectColor,
@@ -105,7 +107,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
         {/* 日期范围 */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          📅 {formatDate(plan.startDate)} ~ {formatDate(plan.endDate)}
+          {formatDate(plan.startDate)} ~ {formatDate(plan.endDate)}
         </Typography>
 
         {/* 进度条 */}
@@ -142,32 +144,40 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </Typography>
       </CardContent>
 
-      <CardActions sx={{ pt: 0 }}>
-        <IconButton
-          size="small"
-          color="primary"
-          onClick={() => onAddTask?.(plan)}
-          title="添加任务"
-        >
-          <AddCircleIcon />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="primary"
-          onClick={() => onEdit?.(plan)}
-          title="编辑计划"
-        >
-          <EditIcon />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="error"
-          onClick={() => onDelete?.(plan)}
-          title="删除计划"
-        >
-          <DeleteIcon />
-        </IconButton>
-      </CardActions>
+      {(onAddTask || onEdit || onDelete) && (
+        <CardActions sx={{ pt: 0 }}>
+          {onAddTask && (
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => onAddTask(plan)}
+              title="添加任务"
+            >
+              <AddCircleIcon />
+            </IconButton>
+          )}
+          {onEdit && (
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => onEdit(plan)}
+              title="编辑计划"
+            >
+              <EditIcon />
+            </IconButton>
+          )}
+          {onDelete && (
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => onDelete(plan)}
+              title="删除计划"
+            >
+              <DeleteIcon />
+            </IconButton>
+          )}
+        </CardActions>
+      )}
     </Card>
   );
 };

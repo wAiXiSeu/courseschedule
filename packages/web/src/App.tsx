@@ -1,55 +1,26 @@
 /**
  * App 根组件
- * - MUI ThemeProvider 包裹
- * - 路由占位
+ * - MUI ThemeProvider 包裹（儿童友好主题，见 app/theme.ts）
+ * - 挂载真实路由表（app/routes.tsx，登录页 + 6 页签）
+ * - 启动时恢复 Supabase 登录会话
  */
-import React from 'react';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { BrowserRouter, Routes, Route, Typography, Box } from 'react-router-dom';
-
-/** 全局 MUI 主题 —— 后续可扩展 */
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1E88E5',
-    },
-    secondary: {
-      main: '#43A047',
-    },
-  },
-  typography: {
-    fontFamily: '"PingFang SC", "Helvetica Neue", Arial, sans-serif',
-  },
-});
-
-/** 首页占位组件 */
-function HomePage(): React.ReactElement {
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="80vh"
-    >
-      <Typography variant="h3" gutterBottom>
-        📚 课程表管理后台
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        欢迎使用小朋友课程表与学习管理系统
-      </Typography>
-    </Box>
-  );
-}
+import React, { useEffect } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { BrowserRouter } from 'react-router-dom';
+import { theme } from './app/theme';
+import { AppRoutes } from './app/routes';
+import { useAuthStore } from './stores/useAuthStore';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    void useAuthStore.getState().init();
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </ThemeProvider>
   );

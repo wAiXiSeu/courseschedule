@@ -1,10 +1,11 @@
 /**
- * Repository 基础接口与内存实现 —— Web 端
+ * Repository 基础接口与内存回退实现 —— Web 端
  *
- * 定义通用的 Repository<T> 接口，供所有业务 Repository 继承。
- * MemoryRepository 为内存实现（方便开发调试），后续应替换为 CloudRepository。
+ * 定义通用的 Repository<T> 接口，供所有业务 Repository 实现。
+ * 组件禁止直接访问 repository，必须经 Store action 调用。
  *
- * 参考 ARCHITECTURE_DELTA.md 方案 A：双端共用云数据库
+ * MemoryRepository 为未配置 Supabase 时的本地回退（数据刷新即丢）；
+ * 云端实现见 supabaseRepository.ts，后端选择见 factory.ts。
  */
 
 import type { BaseEntity } from '@courseschedule/shared';
@@ -12,8 +13,8 @@ import type { BaseEntity } from '@courseschedule/shared';
 /**
  * 通用 Repository 接口
  *
- * 所有业务 Repository 均需实现此接口，保证数据访问层的一致性。
- * 组件禁止直接访问 db / repository，必须经 Store action 调用。
+ * 内存回退与 Supabase 后端各自实现一份，业务 Repository 只依赖这组原语，
+ * 差异全部收敛在 factory.ts。
  */
 export interface Repository<T extends BaseEntity> {
   /** 根据 ID 获取单个实体 */
@@ -21,6 +22,9 @@ export interface Repository<T extends BaseEntity> {
 
   /** 按 childId 列出所有实体 */
   listByChild(childId: string): Promise<T[]>;
+
+  /** 列出当前可见的全部实体（云端由 RLS 限定到当前登录用户） */
+  listAll(): Promise<T[]>;
 
   /** 创建实体（写入并返回） */
   create(entity: T): Promise<T>;
@@ -30,33 +34,26 @@ export interface Repository<T extends BaseEntity> {
 
   /** 根据 ID 删除实体 */
   remove(id: string): Promise<void>;
-
-  /** 清空所有数据（调试用） */
-  clear(): Promise<void>;
 }
 
 /**
- * 内存 Repository 实现
+ * 内存 Repository（本地回退实现）
  *
- * 使用 Map 存储数据，便于开发调试和单测。
- * TODO: 后续替换为 CloudRepository（云数据库实现）。
+ * 表名在进程内共享一份 Map，等价于一个只有本次会话存在的库。
  */
 export class MemoryRepository<T extends BaseEntity> implements Repository<T> {
-  /** 内存存储 */
-  protected store = new Map<string, T>();
+  private store = new Map<string, T>();
 
   async getById(id: string): Promise<T | undefined> {
     return this.store.get(id);
   }
 
   async listByChild(childId: string): Promise<T[]> {
-    const result: T[] = [];
-    for (const entity of this.store.values()) {
-      if (entity.childId === childId) {
-        result.push(entity);
-      }
-    }
-    return result;
+    return Array.from(this.store.values()).filter((e) => e.childId === childId);
+  }
+
+  async listAll(): Promise<T[]> {
+    return Array.from(this.store.values());
   }
 
   async create(entity: T): Promise<T> {
@@ -75,28 +72,17 @@ export class MemoryRepository<T extends BaseEntity> implements Repository<T> {
   async remove(id: string): Promise<void> {
     this.store.delete(id);
   }
+}
 
-  async clear(): Promise<void> {
-    this.store.clear();
-  }
+/** 进程内共享的内存表，键为表名 */
+const memoryBackends = new Map<string, MemoryRepository<BaseEntity>>();
 
-  /**
-   * 获取所有数据（调试用）
-   */
-  getAll(): T[] {
-    return Array.from(this.store.values());
+/** 取指定表的内存后端（同名表复用同一份数据） */
+export function getMemoryBackend<T extends BaseEntity>(table: string): Repository<T> {
+  let backend = memoryBackends.get(table);
+  if (!backend) {
+    backend = new MemoryRepository<BaseEntity>();
+    memoryBackends.set(table, backend);
   }
-
-  /**
-   * 按条件过滤（扩展查询）
-   */
-  async filter(predicate: (entity: T) => boolean): Promise<T[]> {
-    const result: T[] = [];
-    for (const entity of this.store.values()) {
-      if (predicate(entity)) {
-        result.push(entity);
-      }
-    }
-    return result;
-  }
+  return backend as unknown as Repository<T>;
 }

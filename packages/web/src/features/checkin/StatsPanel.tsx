@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import { Box, Typography, Paper, Chip } from '@mui/material';
+import { Box, Typography, Chip } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { WeekOverview } from './WeekOverview';
+import { T, BORDER } from '../../app/tokens';
 
 interface StatsPanelProps {
   /** 累计打卡天数 */
@@ -33,26 +34,35 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
     : 0;
 
   return (
-    <Paper elevation={0} sx={{ p: 3, borderRadius: 3, bgcolor: 'grey.50' }}>
+    <Box
+      sx={{
+        p: 2.5,
+        borderRadius: 3.5,
+        bgcolor: T.paper,
+        border: BORDER,
+        boxShadow: `3px 3px 0 0 ${T.ink}`,
+      }}
+    >
       {/* 统计标题 */}
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-        📊 打卡统计
+      <Typography sx={{ fontWeight: 700, mb: 2, color: T.ink }}>
+        打卡统计
       </Typography>
 
       {/* 统计卡片 */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, flexWrap: 'wrap' }}>
         {/* 累计打卡天数 */}
         <Chip
           icon={<LocalFireDepartmentIcon />}
           label={`累计打卡 ${totalDays} 天`}
           sx={{
-            bgcolor: 'primary.main',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            '& .MuiChip-icon': { color: '#FFD700' },
-            px: 2,
+            bgcolor: T.orange,
+            color: T.ink,
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            '& .MuiChip-icon': { color: T.ink },
+            px: 1.5,
             py: 0.5,
+            height: 32,
           }}
         />
 
@@ -61,18 +71,22 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           icon={<CheckCircleIcon />}
           label={`今日完成 ${completionRate.done}/${completionRate.total}`}
           sx={{
-            bgcolor: completionPercent === 100 ? 'success.main' : 'grey.200',
-            color: completionPercent === 100 ? 'white' : 'text.primary',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            px: 2,
+            bgcolor: completionPercent === 100 ? T.green : T.gray,
+            color: completionPercent === 100 ? '#fff' : T.ink,
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            '& .MuiChip-icon': {
+              color: completionPercent === 100 ? '#fff' : T.textMuted,
+            },
+            px: 1.5,
             py: 0.5,
+            height: 32,
           }}
         />
       </Box>
 
       {/* 本周打卡概览 */}
       <WeekOverview weekStrip={weekStrip} />
-    </Paper>
+    </Box>
   );
 };

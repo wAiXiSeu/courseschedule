@@ -19,10 +19,12 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useMistakeStore } from '../../stores/useMistakeStore';
+import { useIsParent } from '../../stores/useAppStore';
 import { MistakeCard } from './MistakeCard';
 import { MistakeFilterBar } from './MistakeFilterBar';
 import { MistakeFormDialog } from './MistakeFormDialog';
 import { EmptyState } from '../../components/EmptyState';
+import { T, pageHeadingSx } from '../../app/tokens';
 import type { Mistake } from '@courseschedule/shared';
 import type { MistakeFormData } from '../../stores/useMistakeStore';
 
@@ -41,6 +43,8 @@ export const MistakesPage: React.FC = () => {
   const deleteMistake = useMistakeStore((s) => s.deleteMistake);
   const toggleMastery = useMistakeStore((s) => s.toggleMastery);
   const applyFilter = useMistakeStore((s) => s.applyFilter);
+
+  const isParent = useIsParent();
 
   /* ─── 弹窗状态 ─── */
   const [formOpen, setFormOpen] = useState(false);
@@ -106,15 +110,7 @@ export const MistakesPage: React.FC = () => {
   return (
     <Box sx={{ pb: 2 }}>
       {/* 页面标题区 */}
-      <Box
-        sx={{
-          bgcolor: 'error.main',
-          color: '#fff',
-          px: 3,
-          py: 3,
-          borderRadius: '0 0 24px 24px',
-        }}
-      >
+      <Box sx={{ px: 2.5, pt: 3, pb: 1 }}>
         <Box
           sx={{
             display: 'flex',
@@ -122,25 +118,22 @@ export const MistakesPage: React.FC = () => {
             justifyContent: 'space-between',
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            📕 错题本
+          <Typography sx={pageHeadingSx}>
+            错题本
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAdd}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.25)',
-              color: '#fff',
-              borderRadius: 2,
-              fontWeight: 600,
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.35)' },
-            }}
-          >
-            添加错题
-          </Button>
+          {isParent && (
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              startIcon={<AddIcon />}
+              onClick={handleAdd}
+            >
+              添加错题
+            </Button>
+          )}
         </Box>
-        <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+        <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600, mt: 1 }}>
           记录错题，攻克薄弱点
         </Typography>
       </Box>
@@ -171,16 +164,22 @@ export const MistakesPage: React.FC = () => {
         <EmptyState
           emoji="📕"
           title="还没有错题记录"
-          description="点击右上角「添加错题」开始记录吧！"
+          description={
+            isParent
+              ? '点击右上角「添加错题」开始记录吧！'
+              : '暂时没有错题，继续保持！'
+          }
           action={
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleAdd}
-              sx={{ borderRadius: 2 }}
-            >
-              添加第一道错题
-            </Button>
+            isParent ? (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleAdd}
+                sx={{ borderRadius: 2 }}
+              >
+                添加第一道错题
+              </Button>
+            ) : undefined
           }
         />
       )}
@@ -193,8 +192,8 @@ export const MistakesPage: React.FC = () => {
               <Grid item xs={12} sm={6} md={4} key={mistake.id}>
                 <MistakeCard
                   mistake={mistake}
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteRequest}
+                  onEdit={isParent ? handleEdit : undefined}
+                  onDelete={isParent ? handleDeleteRequest : undefined}
                   onToggleMastery={handleToggleMastery}
                 />
               </Grid>

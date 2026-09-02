@@ -1,34 +1,33 @@
 /**
- * 排课规则 Repository —— Web 端内存实现
- *
- * TODO: 后续替换为 CloudRepository（云数据库实现）
+ * 排课规则 Repository —— 业务查询层（后端由 factory 决定：Supabase / 内存回退）
  */
 
 import type { ScheduleRule, ISODate, Weekday } from '@courseschedule/shared';
-import { MemoryRepository } from './base';
+import { TableRepository } from './factory';
 
 /**
  * 排课规则 Repository
  *
  * 管理排课规则的 CRUD 操作。
- * 当前使用内存实现，后续替换为云数据库。
  */
-export class ScheduleRuleRepository extends MemoryRepository<ScheduleRule> {
+export class ScheduleRuleRepository extends TableRepository<ScheduleRule> {
+  constructor() {
+    super('scheduleRules');
+  }
+
   /**
    * 按课程 ID 查询规则
    */
   async listByCourse(childId: string, courseId: string): Promise<ScheduleRule[]> {
-    return this.filter(
-      (r) => r.childId === childId && r.courseId === courseId
-    );
+    return (await this.listByChild(childId)).filter((r) => r.courseId === courseId);
   }
 
   /**
    * 按星期几查询规则
    */
   async listByWeekday(childId: string, weekday: Weekday): Promise<ScheduleRule[]> {
-    return this.filter(
-      (r) => r.childId === childId && r.weekday === weekday && r.isActive
+    return (await this.listByChild(childId)).filter(
+      (r) => r.weekday === weekday && r.isActive
     );
   }
 
@@ -39,8 +38,7 @@ export class ScheduleRuleRepository extends MemoryRepository<ScheduleRule> {
     childId: string,
     dateRange: { start: ISODate; end: ISODate }
   ): Promise<ScheduleRule[]> {
-    return this.filter((r) => {
-      if (r.childId !== childId) return false;
+    return (await this.listByChild(childId)).filter((r) => {
       if (!r.isActive) return false;
       // 规则生效区间与查询区间有交集
       if (r.effectiveUntil && r.effectiveUntil < dateRange.start) return false;
@@ -50,17 +48,11 @@ export class ScheduleRuleRepository extends MemoryRepository<ScheduleRule> {
   }
 
   /**
-   * 删除某课程的所有规则
+   * 删除某课程的所有规则（跨孩子，按 courseId 归属）
    */
   async removeByCourse(courseId: string): Promise<void> {
-    const toRemove: string[] = [];
-    for (const entity of this.store.values()) {
-      if (entity.courseId === courseId) {
-        toRemove.push(entity.id);
-      }
-    }
-    for (const id of toRemove) {
-      this.store.delete(id);
-    }
+    await this.removeMany(
+      (await this.listAll()).filter((r) => r.courseId === courseId)
+    );
   }
 }

@@ -14,14 +14,13 @@ import {
   TextField,
   FormControl,
   InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Box,
   Typography,
 } from '@mui/material';
-import { SUBJECT_COLORS, DEFAULT_INTERVALS, REVIEW_INTERVALS } from '@courseschedule/shared';
+import { REVIEW_INTERVALS } from '@courseschedule/shared';
 import type { ReviewItemFormData } from '../../stores/useReviewStore';
+import { SubjectSelect } from '../../components/SubjectSelect';
 
 interface ReviewItemFormDialogProps {
   /** 是否打开 */
@@ -112,17 +111,11 @@ export const ReviewItemFormDialog: React.FC<ReviewItemFormDialogProps> = ({
 
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>科目</InputLabel>
-          <Select
-            value={formData.subject}
+          <SubjectSelect
             label="科目"
+            value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-          >
-            {Object.keys(SUBJECT_COLORS).map((key) => (
-              <MenuItem key={key} value={key}>
-                {key}
-              </MenuItem>
-            ))}
-          </Select>
+          />
         </FormControl>
 
         <TextField

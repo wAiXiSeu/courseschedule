@@ -1,26 +1,30 @@
 /**
- * 错题 Repository —— Web 端内存实现
- *
- * TODO: 后续替换为 CloudRepository（云数据库实现）
+ * 错题 Repository —— 业务查询层（后端由 factory 决定：Supabase / 内存回退）
  */
 
 import type { Mistake, ISODate, MasteryStatus } from '@courseschedule/shared';
-import { MemoryRepository } from './base';
+import { TableRepository } from './factory';
+
+/** 按出错日期降序 */
+function byDateDesc(a: Mistake, b: Mistake): number {
+  return a.mistakeDate < b.mistakeDate ? 1 : a.mistakeDate > b.mistakeDate ? -1 : 0;
+}
 
 /**
  * 错题 Repository
  *
  * 管理错题记录的 CRUD 操作，支持按科目、日期、掌握状态筛选。
- * 当前使用内存实现，后续替换为云数据库。
  */
-export class MistakeRepository extends MemoryRepository<Mistake> {
+export class MistakeRepository extends TableRepository<Mistake> {
+  constructor() {
+    super('mistakes');
+  }
+
   /**
    * 按科目筛选
    */
   async listBySubject(childId: string, subject: string): Promise<Mistake[]> {
-    return this.filter(
-      (m) => m.childId === childId && m.subject === subject
-    );
+    return (await this.listByChild(childId)).filter((m) => m.subject === subject);
   }
 
   /**
@@ -31,24 +35,17 @@ export class MistakeRepository extends MemoryRepository<Mistake> {
     startDate: ISODate,
     endDate: ISODate
   ): Promise<Mistake[]> {
-    const result = await this.filter(
-      (m) => m.childId === childId && m.mistakeDate >= startDate && m.mistakeDate <= endDate
+    const result = (await this.listByChild(childId)).filter(
+      (m) => m.mistakeDate >= startDate && m.mistakeDate <= endDate
     );
-    // 按出错日期降序排列
-    result.sort((a, b) => (a.mistakeDate < b.mistakeDate ? 1 : a.mistakeDate > b.mistakeDate ? -1 : 0));
-    return result;
+    return result.sort(byDateDesc);
   }
 
   /**
    * 按掌握状态筛选
    */
-  async listByMastery(
-    childId: string,
-    status: MasteryStatus
-  ): Promise<Mistake[]> {
-    return this.filter(
-      (m) => m.childId === childId && m.masteryStatus === status
-    );
+  async listByMastery(childId: string, status: MasteryStatus): Promise<Mistake[]> {
+    return (await this.listByChild(childId)).filter((m) => m.masteryStatus === status);
   }
 
   /**
@@ -58,8 +55,8 @@ export class MistakeRepository extends MemoryRepository<Mistake> {
     childId: string,
     knowledgePoint: string
   ): Promise<Mistake[]> {
-    return this.filter(
-      (m) => m.childId === childId && m.knowledgePoints.includes(knowledgePoint)
+    return (await this.listByChild(childId)).filter((m) =>
+      m.knowledgePoints.includes(knowledgePoint)
     );
   }
 
@@ -67,8 +64,6 @@ export class MistakeRepository extends MemoryRepository<Mistake> {
    * 列出所有错题（按出错日期降序）
    */
   async listAllSorted(childId: string): Promise<Mistake[]> {
-    const all = await this.listByChild(childId);
-    all.sort((a, b) => (a.mistakeDate < b.mistakeDate ? 1 : a.mistakeDate > b.mistakeDate ? -1 : 0));
-    return all;
+    return (await this.listByChild(childId)).sort(byDateDesc);
   }
 }

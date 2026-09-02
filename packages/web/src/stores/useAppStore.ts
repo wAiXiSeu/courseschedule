@@ -68,3 +68,6 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+/** 是否家长模式（可增删改）；孩子模式下页面据此隐藏编辑入口 */
+export const useIsParent = (): boolean => useAppStore((state) => state.mode === 'parent');

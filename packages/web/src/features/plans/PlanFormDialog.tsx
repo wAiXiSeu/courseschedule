@@ -19,8 +19,8 @@ import {
   MenuItem,
 } from '@mui/material';
 import type { LearningPlan, PlanStatus } from '@courseschedule/shared';
-import { SUBJECT_COLORS } from '@courseschedule/shared';
 import type { PlanFormData } from '../../stores/usePlanStore';
+import { SubjectSelect } from '../../components/SubjectSelect';
 
 interface PlanFormDialogProps {
   /** 是否打开 */
@@ -114,17 +114,11 @@ export const PlanFormDialog: React.FC<PlanFormDialogProps> = ({
 
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>科目</InputLabel>
-          <Select
-            value={formData.subject}
+          <SubjectSelect
             label="科目"
+            value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-          >
-            {Object.keys(SUBJECT_COLORS).map((key) => (
-              <MenuItem key={key} value={key}>
-                {key}
-              </MenuItem>
-            ))}
-          </Select>
+          />
         </FormControl>
 
         <TextField

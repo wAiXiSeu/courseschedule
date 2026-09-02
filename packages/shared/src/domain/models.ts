@@ -29,6 +29,44 @@ export interface BaseEntity {
   updatedAt: number;
 }
 
+/* ─── 家庭空间与成员（数据共享边界） ─── */
+
+/** 邀请状态：待对方确认 / 已接受 / 已拒绝 */
+export type FamilyMemberStatus = 'pending' | 'accepted' | 'declined';
+
+/**
+ * 家庭空间
+ *
+ * 所有业务数据归属某个家庭；账号默认只拥有自己的个人空间，
+ * 被邀请并接受后才能查看和管理对方的空间。
+ */
+export interface Family {
+  id: string;
+  /** 家长账号（唯一可邀请/移除成员、改名、删除空间） */
+  ownerUserId: string;
+  /** 空间名称，如「小明的家」 */
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * 家庭成员（仅记录被邀请者；家长由 Family.ownerUserId 表达）
+ */
+export interface FamilyMember {
+  id: string;
+  familyId: string;
+  /** 受邀账号邮箱 */
+  email: string;
+  /** 接受后回填的账号 ID；待确认为空 */
+  userId?: string | null;
+  status: FamilyMemberStatus;
+  /** 发起邀请的账号 */
+  invitedBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 /* ─── 孩子档案（P1 多孩子，首发固定一条默认档案） ─── */
 
 export interface ChildProfile extends BaseEntity {
@@ -45,6 +83,21 @@ export interface ChildProfile extends BaseEntity {
 /** 课程类型：校内 / 校外 */
 export type CourseType = 'school' | 'extracurricular';
 
+/** 科目类别：基础课程 / 通识类 / 美术类 / 运动类 / 棋类 */
+export type SubjectCategory = 'basic' | 'general' | 'art' | 'sports' | 'chess';
+
+/** 科目（可手动添加与修改，Course.color / 各 subject 字段存其 id） */
+export interface Subject {
+  /** 稳定标识（内置科目用语义 key，如 'math'；自建科目为生成 id） */
+  id: string;
+  /** 中文名，如 '数学' */
+  name: string;
+  /** 所属类别 */
+  category: SubjectCategory;
+  /** 色值 hex */
+  color: string;
+}
+
 /** 科目（Course）：一门课程的基本信息 */
 export interface Course extends BaseEntity {
   /** 课程名称，如 "钢琴课" */
@@ -53,7 +106,7 @@ export interface Course extends BaseEntity {
   type: CourseType;
   /** 上课地点（可选） */
   location?: string;
-  /** 色板 key，对应 SUBJECT_COLORS */
+  /** 科目 id（对应 Subject.id，历史数据可能为 SUBJECT_COLORS 的 key） */
   color: string;
   /** 备注（可选） */
   note?: string;
@@ -103,6 +156,20 @@ export interface CourseOccurrence {
   startTime: HHmm;
   /** 结束时间 HH:mm */
   endTime: HHmm;
+}
+
+/* ─── 课程取消 ─── */
+
+/** 课程取消记录（CourseCancellation）：某节排课在指定日期被取消，需备注原因 */
+export interface CourseCancellation extends BaseEntity {
+  /** 关联课程 ID */
+  courseId: string;
+  /** 关联排课规则 ID */
+  ruleId: string;
+  /** 被取消的日期 YYYY-MM-DD */
+  date: ISODate;
+  /** 取消原因（必填，家长录入） */
+  reason: string;
 }
 
 /* ─── 学习计划 ─── */

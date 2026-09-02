@@ -1,26 +1,25 @@
 /**
- * 打卡 Repository —— Web 端内存实现
- *
- * TODO: 后续替换为 CloudRepository（云数据库实现）
+ * 打卡 Repository —— 业务查询层（后端由 factory 决定：Supabase / 内存回退）
  */
 
 import type { CheckInRecord, ISODate, CheckinRefType } from '@courseschedule/shared';
-import { MemoryRepository } from './base';
+import { TableRepository } from './factory';
 
 /**
  * 打卡 Repository
  *
  * 管理打卡记录的 CRUD 操作，支持按日期、范围、引用类型查询。
- * 当前使用内存实现，后续替换为云数据库。
  */
-export class CheckinRepository extends MemoryRepository<CheckInRecord> {
+export class CheckinRepository extends TableRepository<CheckInRecord> {
+  constructor() {
+    super('checkinRecords');
+  }
+
   /**
    * 按日期查询打卡记录
    */
   async listByDate(childId: string, date: ISODate): Promise<CheckInRecord[]> {
-    return this.filter(
-      (r) => r.childId === childId && r.date === date
-    );
+    return (await this.listByChild(childId)).filter((r) => r.date === date);
   }
 
   /**
@@ -31,8 +30,8 @@ export class CheckinRepository extends MemoryRepository<CheckInRecord> {
     startDate: ISODate,
     endDate: ISODate
   ): Promise<CheckInRecord[]> {
-    return this.filter(
-      (r) => r.childId === childId && r.date >= startDate && r.date <= endDate
+    return (await this.listByChild(childId)).filter(
+      (r) => r.date >= startDate && r.date <= endDate
     );
   }
 
@@ -44,8 +43,8 @@ export class CheckinRepository extends MemoryRepository<CheckInRecord> {
     refType: CheckinRefType,
     refId: string
   ): Promise<CheckInRecord[]> {
-    return this.filter(
-      (r) => r.childId === childId && r.refType === refType && r.refId === refId
+    return (await this.listByChild(childId)).filter(
+      (r) => r.refType === refType && r.refId === refId
     );
   }
 
@@ -58,17 +57,9 @@ export class CheckinRepository extends MemoryRepository<CheckInRecord> {
     refId: string,
     date: ISODate
   ): Promise<CheckInRecord | undefined> {
-    for (const entity of this.store.values()) {
-      if (
-        entity.childId === childId &&
-        entity.refType === refType &&
-        entity.refId === refId &&
-        entity.date === date
-      ) {
-        return entity;
-      }
-    }
-    return undefined;
+    return (await this.listByChild(childId)).find(
+      (r) => r.refType === refType && r.refId === refId && r.date === date
+    );
   }
 
   /**

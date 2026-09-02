@@ -5,17 +5,14 @@
  */
 
 import React from 'react';
-import { Box, TextField, Chip, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
-import { SUBJECT_COLORS } from '@courseschedule/shared';
+import { Box, TextField, Chip, FormControl, InputLabel } from '@mui/material';
+import { SubjectSelect } from '../../components/SubjectSelect';
 import type { MistakeFilter } from '../../stores/useMistakeStore';
 
 interface MistakeFilterBarProps {
   filter: MistakeFilter;
   onFilterChange: (filter: Partial<MistakeFilter>) => void;
 }
-
-/** 科目列表（从 SUBJECT_COLORS 生成） */
-const SUBJECTS = Object.keys(SUBJECT_COLORS);
 
 /**
  * 错题筛选栏
@@ -29,19 +26,14 @@ export const MistakeFilterBar: React.FC<MistakeFilterBarProps> = ({
       {/* 科目筛选 */}
       <FormControl sx={{ minWidth: 120 }}>
         <InputLabel>科目</InputLabel>
-        <Select
-          value={filter.subject}
+        <SubjectSelect
           label="科目"
-          onChange={(e) => onFilterChange({ subject: e.target.value })}
           size="small"
-        >
-          <MenuItem value="">全部</MenuItem>
-          {SUBJECTS.map((subject) => (
-            <MenuItem key={subject} value={subject}>
-              {subject}
-            </MenuItem>
-          ))}
-        </Select>
+          includeAll
+          allLabel="全部科目"
+          value={filter.subject}
+          onChange={(e) => onFilterChange({ subject: e.target.value })}
+        />
       </FormControl>
 
       {/* 知识点筛选 */}

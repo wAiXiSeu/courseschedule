@@ -2,7 +2,7 @@
  * 课程表单弹窗
  *
  * 支持添加/编辑课程及其排课规则。
- * 字段：课程名、类型(校内/校外)、地点、颜色(色板选择)、排课规则(星期+时间+生效区间)。
+ * 课程不单独命名，标题即所选科目；字段：科目、类型(校内/校外)、地点、排课规则(星期+时间+生效区间)。
  * 支持"添加更多排课时间"（同一课程多条 ScheduleRule）。
  */
 
@@ -30,11 +30,15 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   type Course,
   type ISODate,
-  SUBJECT_COLORS,
+  type SubjectCategory,
+  SUBJECT_CATEGORY_LABELS,
+  SUBJECT_CATEGORY_ORDER,
   getTodayISODate,
   addDays,
 } from '@courseschedule/shared';
+import { useNavigate } from 'react-router-dom';
 import type { CourseFormData, ScheduleRuleFormData } from '../../stores/useScheduleStore';
+import { useSubjectStore } from '../../stores/useSubjectStore';
 
 interface CourseFormDialogProps {
   open: boolean;
@@ -44,6 +48,8 @@ interface CourseFormDialogProps {
   existingRules?: ScheduleRuleFormData[];
   onSave: (data: CourseFormData) => Promise<void>;
   onClose: () => void;
+  /** 删除课程（仅编辑模式显示入口） */
+  onDelete?: (course: Course) => Promise<void>;
 }
 
 /** 表单默认值 */
@@ -55,10 +61,9 @@ const getDefaultRule = (): ScheduleRuleFormData => ({
 });
 
 const defaultFormData: CourseFormData = {
-  name: '',
   type: 'extracurricular',
   location: '',
-  color: 'music',
+  color: 'math',
   rules: [getDefaultRule()],
 };
 
@@ -74,17 +79,27 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
   existingRules,
   onSave,
   onClose,
+  onDelete,
 }) => {
   const [formData, setFormData] = useState<CourseFormData>(defaultFormData);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const subjects = useSubjectStore((s) => s.subjects);
+  const navigate = useNavigate();
+
+  // 按类别分组（跳过空组）
+  const subjectGroups = SUBJECT_CATEGORY_ORDER.map((category: SubjectCategory) => ({
+    category,
+    items: subjects.filter((s) => s.category === category),
+  })).filter((g) => g.items.length > 0);
 
   // 打开时初始化表单
   useEffect(() => {
     if (open) {
       if (course && existingRules) {
         setFormData({
-          name: course.name,
           type: course.type,
           location: course.location || '',
           color: course.color,
@@ -104,8 +119,8 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
   // 校验表单
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) {
-      newErrors.name = '请输入课程名称';
+    if (!formData.color) {
+      newErrors.color = '请选择科目';
     }
     if (formData.rules.length === 0) {
       newErrors.rules = '请至少添加一个排课时间';
@@ -131,6 +146,22 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
       setErrors({ form: (err as Error).message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // 删除课程
+  const handleDelete = async () => {
+    if (!course || !onDelete) return;
+    const subjectOf = subjects.find((s) => s.id === course.color)?.name ?? course.color;
+    if (!window.confirm(`确定删除「${subjectOf}」这门课程吗？它的排课时间会一并删除。`)) return;
+    setDeleting(true);
+    try {
+      await onDelete(course);
+      onClose();
+    } catch (err) {
+      setErrors({ form: (err as Error).message });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -173,20 +204,8 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* 课程名称 */}
-        <TextField
-          fullWidth
-          label="课程名称"
-          value={formData.name}
-          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-          error={!!errors.name}
-          helperText={errors.name}
-          sx={{ mt: 1, mb: 2 }}
-          placeholder="如：钢琴课、语文、数学"
-        />
-
         {/* 课程类型 + 地点 */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, mt: 1, mb: 2 }}>
           <FormControl sx={{ minWidth: 140 }}>
             <InputLabel>类型</InputLabel>
             <Select
@@ -199,8 +218,8 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
                 }))
               }
             >
-              <MenuItem value="school">🏫 校内</MenuItem>
-              <MenuItem value="extracurricular">🎹 校外</MenuItem>
+              <MenuItem value="school">校内</MenuItem>
+              <MenuItem value="extracurricular">校外</MenuItem>
             </Select>
           </FormControl>
 
@@ -215,33 +234,66 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
           />
         </Box>
 
-        {/* 颜色选择（色板） */}
-        <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
-          颜色标签
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-          {Object.entries(SUBJECT_COLORS).map(([key, hex]) => (
-            <Chip
-              key={key}
-              label={key}
-              onClick={() => setFormData((prev) => ({ ...prev, color: key }))}
-              sx={{
-                bgcolor: formData.color === key ? hex : hex + '33',
-                color: formData.color === key ? '#fff' : hex,
-                fontWeight: formData.color === key ? 700 : 400,
-                border: formData.color === key ? `2px solid ${hex}` : '2px solid transparent',
-                cursor: 'pointer',
-              }}
-            />
+        {/* 科目选择（按类别分组，中文名） */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>
+            选择科目
+          </Typography>
+          <Button
+            size="small"
+            onClick={() => {
+              onClose();
+              navigate('/subjects');
+            }}
+          >
+            管理科目
+          </Button>
+        </Box>
+        <Box sx={{ mb: 2 }}>
+          {subjectGroups.map((group) => (
+            <Box key={group.category} sx={{ mb: 1.25 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                {SUBJECT_CATEGORY_LABELS[group.category]}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
+                {group.items.map((subject) => {
+                  const selected = formData.color === subject.id;
+                  return (
+                    <Chip
+                      key={subject.id}
+                      label={subject.name}
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, color: subject.id }))
+                      }
+                      sx={{
+                        bgcolor: selected ? subject.color : subject.color + '33',
+                        color: selected ? '#fff' : subject.color,
+                        fontWeight: selected ? 700 : 400,
+                        border: selected
+                          ? `2px solid ${subject.color}`
+                          : '2px solid transparent',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
           ))}
         </Box>
+
+        {errors.color && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: -1 }}>
+            {errors.color}
+          </Typography>
+        )}
 
         <Divider sx={{ my: 2 }} />
 
         {/* 排课规则 */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Typography variant="body1" sx={{ fontWeight: 600, flex: 1 }}>
-            📅 排课时间
+            排课时间
           </Typography>
           <Button
             startIcon={<AddIcon />}
@@ -369,13 +421,24 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} color="inherit" disabled={saving}>
+        {course && onDelete && (
+          <Button
+            onClick={handleDelete}
+            color="error"
+            disabled={saving || deleting}
+            startIcon={deleting ? <CircularProgress size={16} /> : undefined}
+            sx={{ mr: 'auto' }}
+          >
+            {deleting ? '删除中…' : '删除课程'}
+          </Button>
+        )}
+        <Button onClick={onClose} color="inherit" disabled={saving || deleting}>
           取消
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={saving}
+          disabled={saving || deleting}
           startIcon={saving ? <CircularProgress size={16} /> : undefined}
         >
           {saving ? '保存中…' : course ? '更新' : '添加'}
