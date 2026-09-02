@@ -10,6 +10,9 @@ export * from './domain/models';
 // 常量定义
 export * from './core/constants';
 
+// 今日一句（古诗词 / 名言警句内容池）
+export * from './core/recitation';
+
 // 工具函数
 export * from './core/utils/date';
 export * from './core/utils/id';

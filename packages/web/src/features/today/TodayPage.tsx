@@ -1,32 +1,23 @@
 /**
  * 今日视图页面
  *
- * 孩子首页 P0-3：显示今日日期、课程时间轴、任务清单、本周打卡情况
+ * 孩子首页：今日日期 + 今日一句（必背古诗词/名言）+ 今日课程时间轴
  */
 
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
 import { useTodayData } from './useTodayData';
 import { TodayTimeline } from './TodayTimeline';
-import { TodayTaskList } from './TodayTaskList';
-import { useCheckinStore } from '../../stores/useCheckinStore';
 import { useAppStore } from '../../stores/useAppStore';
-import { T, cardSx, pageHeadingSx, sectionTitleSx, BORDER } from '../../app/tokens';
-import type { TaskView } from '@courseschedule/shared';
+import { getDailyRecitation, RECITATION_KIND_LABEL } from '@courseschedule/shared';
+import { T, cardSx, pageHeadingSx, sectionTitleSx } from '../../app/tokens';
 
 /**
  * 今日视图页面
  */
 export const TodayPage: React.FC = () => {
-  const { todayData, loading, refresh } = useTodayData();
+  const { todayData, loading } = useTodayData();
   const currentDate = useAppStore((s) => s.currentDate);
-  const checkin = useCheckinStore((s) => s.checkin);
-
-  const handleCheckin = async (task: TaskView) => {
-    await checkin(task.refType, task.refId, currentDate);
-    await refresh();
-  };
 
   if (loading || !todayData) {
     return (
@@ -36,11 +27,12 @@ export const TodayPage: React.FC = () => {
     );
   }
 
-  const { date, weekdayLabel, courses, tasks, todayDone, todayTotal, streak, weekStrip } = todayData;
+  const { date, weekdayLabel, courses } = todayData;
+  const quote = getDailyRecitation(currentDate);
 
   // 格式化日期显示
   const formatDateDisplay = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-');
+    const [, month, day] = dateStr.split('-');
     return `${parseInt(month)}月${parseInt(day)}日`;
   };
 
@@ -51,56 +43,65 @@ export const TodayPage: React.FC = () => {
         <Typography sx={pageHeadingSx}>
           今天是 {formatDateDisplay(date)}
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: T.textMuted, mt: 1, fontWeight: 600 }}
-        >
-          {weekdayLabel} · 已打卡 {streak} 天 · 今日任务 {todayDone}/{todayTotal}
+        <Typography variant="body2" sx={{ color: T.textMuted, mt: 1, fontWeight: 600 }}>
+          {weekdayLabel}
         </Typography>
       </Box>
 
-      {/* 本周打卡格子 */}
+      {/* 今日一句：必背古诗词 / 名言警句 */}
       <Box sx={{ px: 2, mt: 2 }}>
-        <Box sx={{ ...cardSx, p: 2 }}>
-          <Typography sx={{ ...sectionTitleSx, mb: 1.5 }}>
-            本周打卡
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-around' }}>
-            {['一', '二', '三', '四', '五', '六', '日'].map((day, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 2,
-                    bgcolor: weekStrip[i] ? T.green : T.paper,
-                    border: BORDER,
-                    boxShadow: weekStrip[i] ? `2px 2px 0 0 ${T.ink}` : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {weekStrip[i] && (
-                    <CheckIcon sx={{ fontSize: 20, color: '#fff', strokeWidth: 3 }} />
-                  )}
-                </Box>
-                <Typography
-                  variant="caption"
-                  sx={{ color: weekStrip[i] ? T.ink : T.textMuted, fontWeight: 700 }}
-                >
-                  {day}
-                </Typography>
-              </Box>
-            ))}
+        <Box sx={{ ...cardSx, p: 0, overflow: 'hidden' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 2,
+              py: 1,
+              bgcolor: T.pink,
+            }}
+          >
+            <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>
+              今日一句
+            </Typography>
+            <Box
+              sx={{
+                ml: 'auto',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                color: '#fff',
+                bgcolor: 'rgba(0,0,0,0.25)',
+                px: 1,
+                py: 0.25,
+                borderRadius: '999px',
+              }}
+            >
+              {RECITATION_KIND_LABEL[quote.kind]}
+            </Box>
+          </Box>
+          <Box sx={{ p: 2.5 }}>
+            <Typography
+              sx={{
+                fontSize: '1.2rem',
+                fontWeight: 800,
+                color: T.ink,
+                lineHeight: 1.7,
+                textAlign: 'center',
+                letterSpacing: 0.5,
+              }}
+            >
+              {quote.text}
+            </Typography>
+            <Typography
+              sx={{
+                mt: 1.5,
+                color: T.textMuted,
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textAlign: 'right',
+              }}
+            >
+              —— {quote.source}
+            </Typography>
           </Box>
         </Box>
       </Box>
@@ -111,14 +112,6 @@ export const TodayPage: React.FC = () => {
           今天的课程
         </Typography>
         <TodayTimeline courses={courses} />
-      </Box>
-
-      {/* 今日任务 */}
-      <Box sx={{ px: 2, mt: 4 }}>
-        <Typography sx={{ ...sectionTitleSx, fontSize: '1.0625rem', mb: 1.5 }}>
-          今天的任务
-        </Typography>
-        <TodayTaskList tasks={tasks} onCheckin={handleCheckin} />
       </Box>
     </Box>
   );
