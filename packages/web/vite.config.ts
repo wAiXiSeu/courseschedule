@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import legacy from '@vitejs/plugin-legacy';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
@@ -7,12 +8,20 @@ import path from 'path';
  * Vite 配置
  * - React 插件
  * - 路径别名 @ → src、@courseschedule/shared → ../shared/src
+ * - legacy：额外产出 SystemJS 老包 + core-js polyfill + nomodule 兜底，
+ *   让 iOS 10.3.3（Safari 内核停在 10.1）能解析执行；现代浏览器仍走原生 ESM 精简包
  * - PWA：生成 manifest + service worker（可安装、离线壳）
  *   Supabase 走跨域请求，默认不被 SW 拦截缓存，保证鉴权与数据实时。
  */
 export default defineConfig({
   plugins: [
     react(),
+    legacy({
+      // 插件默认 targets 含 safari>=12，覆盖不到 iOS 10.3，必须显式放宽
+      targets: ['iOS >= 10', 'Safari >= 10'],
+      // 现代包照常产出，老设备靠 nomodule 分支加载 legacy chunk
+      renderModernChunks: true,
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'],
