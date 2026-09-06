@@ -13,6 +13,9 @@ begin;
 -- 业务表（含家庭空间预留表）
 drop table if exists
   "courseCancellations",
+  "redemptions",
+  "rewards",
+  "pointAdjustments",
   "checkinRecords",
   "reviewTasks",
   "reviewItems",

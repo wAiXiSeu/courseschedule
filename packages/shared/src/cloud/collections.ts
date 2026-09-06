@@ -28,6 +28,12 @@ export const COLLECTIONS = {
   IMAGES: 'images',
   /** 复习间隔模板（P1 预留） */
   INTERVAL_TEMPLATES: 'intervalTemplates',
+  /** 家长手工加减积分流水 */
+  POINT_ADJUSTMENTS: 'pointAdjustments',
+  /** 兑换品（家长自定义并定价） */
+  REWARDS: 'rewards',
+  /** 兑换单（孩子下单、家长确认） */
+  REDEMPTIONS: 'redemptions',
 } as const;
 
 /** 集合名类型 */

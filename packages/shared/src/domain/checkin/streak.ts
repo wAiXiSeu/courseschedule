@@ -1,11 +1,8 @@
 /**
  * 打卡统计工具 —— 跨端共享纯函数
  *
- * 负责计算累计打卡天数、本周打卡状态、完成率等统计数据。
- * 参考 ARCHITECTURE_DELTA.md 第四节「打卡语义澄清」：
- * - 移除「连续打卡天数」概念，改为「累计打卡天数」
- * - 保留本周打卡日历（不强调连续性）
- * - 保留今日完成率
+ * 提供累计打卡天数、当前 / 最长连续天数、本周打卡格子、今日完成率。
+ * 「连续打卡天数」曾按 D5 决策移除，积分系统需要里程碑奖励，已恢复。
  */
 
 import type { ISODate, CheckInRecord, TaskView } from '../models';
@@ -100,21 +97,49 @@ export function calculateCompletionRate(
   return { done, total: tasks.length };
 }
 
+export function calculateCurrentStreak(records: CheckInRecord[], today: ISODate): number {
+  const dates = toCheckinDateSet(records);
+  if (dates.size === 0) return 0;
+
+  // 今天还没打卡不算断：从昨天起往回数
+  let cursor = dates.has(today) ? today : addDays(today, -1);
+  if (!dates.has(cursor)) return 0;
+
+  let streak = 0;
+  while (dates.has(cursor)) {
+    streak++;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
 /**
- * 计算连续打卡天数（已废弃，保留兼容性）
+ * 计算历史最长连续打卡天数
  *
- * 根据 ARCHITECTURE_DELTA.md，连续打卡概念已移除。
- * 此函数仅保留向后兼容，实际应使用 calculateTotalCheckinDays。
+ * 里程碑奖励按此发放：一旦达到某档，之后即使断签也不会收回（只降不升不符合直觉）。
  *
- * @deprecated 使用 calculateTotalCheckinDays 代替
  * @param records 打卡记录列表
- * @param today 今天日期（YYYY-MM-DD）
- * @returns 连续打卡天数（始终返回 0，建议迁移到新方法）
  */
-export function calculateStreak(records: CheckInRecord[], today: ISODate): number {
-  // 已移除连续打卡概念，返回 0
-  console.warn('calculateStreak 已废弃，请使用 calculateTotalCheckinDays');
-  return 0;
+export function calculateLongestStreak(records: CheckInRecord[]): number {
+  const dates = Array.from(toCheckinDateSet(records)).sort();
+  if (dates.length === 0) return 0;
+
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < dates.length; i++) {
+    run = addDays(dates[i - 1], 1) === dates[i] ? run + 1 : 1;
+    if (run > longest) longest = run;
+  }
+  return longest;
+}
+
+/** 有打卡记录的日期集合（同日多条只留一个日期） */
+function toCheckinDateSet(records: CheckInRecord[]): Set<string> {
+  const dates = new Set<string>();
+  for (const record of records ?? []) {
+    dates.add(record.date);
+  }
+  return dates;
 }
 
 /**

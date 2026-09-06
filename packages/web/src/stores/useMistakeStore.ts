@@ -14,6 +14,7 @@ import {
 } from '@courseschedule/shared';
 import { MistakeRepository } from '../data/repositories/mistakeRepository';
 import { useAppStore } from './useAppStore';
+import { usePointsStore } from './usePointsStore';
 
 /* ─── 筛选条件 ─── */
 
@@ -193,6 +194,7 @@ export const useMistakeStore = create<MistakeState>((set, get) => ({
   deleteMistake: async (mistakeId) => {
     await mistakeRepo.remove(mistakeId);
     await get().loadAll();
+    await usePointsStore.getState().load();
   },
 
   toggleMastery: async (mistakeId) => {
@@ -210,6 +212,8 @@ export const useMistakeStore = create<MistakeState>((set, get) => ({
     });
 
     await get().loadAll();
+    // 掌握状态即积分开关：来回切换会同步加减那笔分
+    await usePointsStore.getState().load();
   },
 
   applyFilter: (partial) => {

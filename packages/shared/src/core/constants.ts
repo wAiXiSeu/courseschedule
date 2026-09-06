@@ -1,10 +1,10 @@
 /**
  * 常量定义 —— 跨端共享
  *
- * 包含科目（含分类与色板）、复习间隔等全局常量。
+ * 包含科目（含分类与色板）、复习间隔、积分规则与内置兑换品等全局常量。
  */
 
-import type { Subject, SubjectCategory } from '../domain/models';
+import type { PointEntryKind, Reward, Subject, SubjectCategory } from '../domain/models';
 
 /** 科目类别中文名映射 */
 export const SUBJECT_CATEGORY_LABELS: Record<SubjectCategory, string> = {
@@ -125,3 +125,56 @@ export const DATE_FORMAT = 'YYYY-MM-DD';
 
 /** 时间格式辅助 */
 export const TIME_FORMAT = 'HH:mm';
+
+/* ─── 积分规则 ─── */
+
+/**
+ * 积分分值表 —— 全站单一事实来源
+ *
+ * 派生类分值由打卡 / 错题记录实时算出（撤销来源记录即自动回冲），
+ * 里程碑按最长连续记录发放、每档只发一次。
+ */
+export const POINT_RULES = {
+  /** 学习计划任务打卡 */
+  planTask: 10,
+  /** 到期复习任务打卡（复习更反人性，略高） */
+  reviewTask: 12,
+  /** 课程到课 */
+  attendance: 8,
+  /** 错题转为已掌握 */
+  mistakeMastered: 5,
+  /** 当日任务全部完成的满额奖励 */
+  dailyGoalBonus: 20,
+  /** 补卡的任务分倍率（满额奖不受影响） */
+  makeupMultiplier: 0.5,
+} as const;
+
+/** 连续打卡里程碑档位：最长连续记录达到 days 时一次性发 points */
+export const STREAK_MILESTONES: readonly { days: number; points: number; label: string }[] = [
+  { days: 7, points: 50, label: '坚持一周' },
+  { days: 21, points: 150, label: '养成习惯' },
+  { days: 50, points: 300, label: '半个学期' },
+  { days: 100, points: 500, label: '百日打卡' },
+] as const;
+
+/** 积分流水来源中文名 */
+export const POINT_ENTRY_KIND_LABELS: Record<PointEntryKind, string> = {
+  checkin: '打卡',
+  attendance: '到课',
+  mistake: '错题攻克',
+  daily_goal: '今日满额',
+  milestone: '里程碑',
+  manual: '家长调整',
+  redemption: '兑换',
+};
+
+/** 内置兑换品：家庭空间首次进入积分页时铺底，家长可随意改删 */
+export type RewardSeed = Omit<Reward, 'id' | 'childId' | 'createdAt' | 'updatedAt'>;
+
+export const DEFAULT_REWARDS: RewardSeed[] = [
+  { title: '一个冰淇淋', emoji: '🍦', description: '今天想吃哪个口味都行', cost: 30, isActive: true },
+  { title: '多一集动画', emoji: '📺', description: '看完这一集再去洗漱', cost: 40, isActive: true },
+  { title: '游戏时间 30 分钟', emoji: '🎮', description: '平板自由支配半小时', cost: 50, isActive: true },
+  { title: '去游乐场一次', emoji: '🛝', description: '周末挑一天专门去玩', cost: 150, isActive: true },
+  { title: '挑一份小礼物', emoji: '🎁', description: '书店或文具店任选一样', cost: 400, isActive: true },
+];

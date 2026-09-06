@@ -258,14 +258,22 @@ export interface ReviewTask extends BaseEntity {
 
 /* ─── 打卡 ─── */
 
-/** 打卡引用类型 */
-export type CheckinRefType = 'plan_task' | 'review_task';
+/** 任务打卡引用类型（学习计划任务 / 到期复习任务） */
+export type TaskRefType = 'plan_task' | 'review_task';
 
-/** 打卡记录（CheckInRecord）：每日学习打卡 */
+/**
+ * 打卡引用类型
+ *
+ * 'course_rule' 为课程到课打卡：refId 存 ScheduleRule.id，
+ * 配合 date 唯一定位一次上课（课程实例是派生对象、本身无 id）。
+ */
+export type CheckinRefType = TaskRefType | 'course_rule';
+
+/** 打卡记录（CheckInRecord）：每日学习打卡 / 课程到课 */
 export interface CheckInRecord extends BaseEntity {
-  /** 引用类型：plan_task 或 review_task */
+  /** 引用类型 */
   refType: CheckinRefType;
-  /** 引用 ID（PlanTask.id 或 ReviewTask.id） */
+  /** 引用 ID（PlanTask.id / ReviewTask.id / ScheduleRule.id） */
   refId: string;
   /** 打卡归属日 YYYY-MM-DD（补卡时仍是当天） */
   date: ISODate;
@@ -273,6 +281,86 @@ export interface CheckInRecord extends BaseEntity {
   doneAt: number;
   /** 是否补卡（当日稍晚补勾） */
   isMakeup: boolean;
+}
+
+/* ─── 积分与奖励 ─── */
+
+/**
+ * 积分流水条目来源
+ *
+ * 前五类由打卡 / 错题记录实时派生（不落库，删除来源记录积分自动回冲）；
+ * 'manual' 与 'redemption' 是真实落库的支出/调整记录。
+ */
+export type PointEntryKind =
+  | 'checkin'
+  | 'attendance'
+  | 'mistake'
+  | 'daily_goal'
+  | 'milestone'
+  | 'manual'
+  | 'redemption';
+
+/** 积分流水条目（派生条目只存在于计算结果中） */
+export interface PointEntry {
+  /** 稳定键：派生条目由来源记录 id 推导（见 POINT_ENTRY_ID_PREFIX） */
+  id: string;
+  kind: PointEntryKind;
+  /** 归属日 YYYY-MM-DD */
+  date: ISODate;
+  /** 收入为正、兑换为负 */
+  points: number;
+  /** 展示文案，如「背诵乘法口诀 打卡」 */
+  title: string;
+  /** 手工条目原因 / 兑换品说明 */
+  note?: string;
+  /** 来源记录 id（派生条目指向其打卡或错题记录） */
+  refId?: string;
+  /** 排序辅助（落库条目用自身 createdAt，派生条目用归属时刻） */
+  sortAt: number;
+}
+
+/** 家长手工加减积分流水（唯一可正可负的手动来源） */
+export interface PointAdjustment extends BaseEntity {
+  /** 归属日 YYYY-MM-DD */
+  date: ISODate;
+  /** 增减分值，可为负 */
+  points: number;
+  /** 原因（必填，进流水展示给孩子看） */
+  reason: string;
+}
+
+/** 兑换品（家长自定义并定价；下架不清历史兑换单） */
+export interface Reward extends BaseEntity {
+  title: string;
+  /** 贴纸图标 emoji */
+  emoji: string;
+  description?: string;
+  /** 所需积分 */
+  cost: number;
+  isActive: boolean;
+}
+
+/** 兑换单状态：待家长确认 / 已通过（已扣分）/ 已拒绝 */
+export type RedemptionStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * 兑换单（孩子下单 → 家长确认才真正扣积分）
+ *
+ * rewardTitle / rewardEmoji / cost 均为快照：奖励被改名或下架后，
+ * 历史兑换单仍能看懂，且家长审批时不会因价格变动产生争议。
+ */
+export interface Redemption extends BaseEntity {
+  rewardId: string;
+  rewardTitle: string;
+  rewardEmoji: string;
+  cost: number;
+  status: RedemptionStatus;
+  /** 提交兑换的账号 */
+  requestedBy: string;
+  requestedAt: number;
+  /** 家长确认的账号 */
+  reviewedBy?: string | null;
+  reviewedAt?: number | null;
 }
 
 /* ─── 错题本 ─── */
@@ -320,7 +408,7 @@ export interface TaskView {
   /** 来源标签 */
   sourceLabel: '学习计划' | '复习计划';
   /** 引用类型 */
-  refType: CheckinRefType;
+  refType: TaskRefType;
   /** 引用 ID */
   refId: string;
   /** 当日是否已完成（有对应 CheckInRecord） */

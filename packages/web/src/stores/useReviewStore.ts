@@ -18,6 +18,7 @@ import {
 } from '@courseschedule/shared';
 import { ReviewItemRepository, ReviewTaskRepository } from '../data/repositories/reviewRepository';
 import { useAppStore } from './useAppStore';
+import { usePointsStore } from './usePointsStore';
 
 /** 复习项表单数据 */
 export interface ReviewItemFormData {
@@ -148,6 +149,8 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     }
 
     await get().loadAll();
+    // 完成或跳过都会改变「当天到期任务」集合，满额奖要跟着重算
+    await usePointsStore.getState().load();
   },
 
   skipTask: async (taskId) => {
@@ -159,6 +162,7 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
         updatedAt: Date.now(),
       });
       await get().loadAll();
+      await usePointsStore.getState().load();
     }
   },
 }));

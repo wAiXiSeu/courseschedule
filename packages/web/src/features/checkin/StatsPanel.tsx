@@ -1,30 +1,44 @@
 /**
  * 打卡统计面板
  *
- * 显示累计打卡天数、本周打卡格子、今日完成率。
+ * 显示累计与连续打卡天数、历史最长纪录、本周打卡格子、今日完成率。
  */
 
 import React from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { WeekOverview } from './WeekOverview';
 import { T, BORDER } from '../../app/tokens';
 
 interface StatsPanelProps {
   /** 累计打卡天数 */
   totalDays: number;
+  /** 当前连续打卡天数 */
+  currentStreak: number;
+  /** 历史最长连续打卡天数 */
+  longestStreak: number;
   /** 本周打卡状态 */
   weekStrip: boolean[];
   /** 今日完成率 */
   completionRate: { done: number; total: number };
 }
 
+const CHIP_BASE = {
+  height: 32,
+  fontWeight: 700,
+  fontSize: '0.85rem',
+  px: 1.5,
+} as const;
+
 /**
  * 打卡统计面板
  */
 export const StatsPanel: React.FC<StatsPanelProps> = ({
   totalDays,
+  currentStreak,
+  longestStreak,
   weekStrip,
   completionRate,
 }) => {
@@ -53,34 +67,52 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         {/* 累计打卡天数 */}
         <Chip
           icon={<LocalFireDepartmentIcon />}
-          label={`累计打卡 ${totalDays} 天`}
+          label={`累计 ${totalDays} 天`}
           sx={{
+            ...CHIP_BASE,
             bgcolor: T.orange,
             color: T.ink,
-            fontWeight: 700,
-            fontSize: '0.85rem',
             '& .MuiChip-icon': { color: T.ink },
-            px: 1.5,
             py: 0.5,
-            height: 32,
+          }}
+        />
+
+        {/* 当前连续天数：里程碑奖励就靠它 */}
+        <Chip
+          label={`🔥 连续 ${currentStreak} 天`}
+          sx={{
+            ...CHIP_BASE,
+            fontWeight: 800,
+            bgcolor: currentStreak > 0 ? T.yellow : T.gray,
+            color: T.ink,
+            border: BORDER,
+          }}
+        />
+
+        {/* 历史最长纪录 */}
+        <Chip
+          icon={<EmojiEventsIcon />}
+          label={`最长 ${longestStreak} 天`}
+          sx={{
+            ...CHIP_BASE,
+            bgcolor: T.gray,
+            color: T.ink,
+            '& .MuiChip-icon': { color: T.ink },
           }}
         />
 
         {/* 今日完成率 */}
         <Chip
           icon={<CheckCircleIcon />}
-          label={`今日完成 ${completionRate.done}/${completionRate.total}`}
+          label={`今日 ${completionRate.done}/${completionRate.total}`}
           sx={{
+            ...CHIP_BASE,
             bgcolor: completionPercent === 100 ? T.green : T.gray,
             color: completionPercent === 100 ? '#fff' : T.ink,
-            fontWeight: 700,
-            fontSize: '0.85rem',
             '& .MuiChip-icon': {
               color: completionPercent === 100 ? '#fff' : T.textMuted,
             },
-            px: 1.5,
             py: 0.5,
-            height: 32,
           }}
         />
       </Box>

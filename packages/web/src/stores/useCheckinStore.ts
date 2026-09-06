@@ -21,6 +21,7 @@ import {
 } from '@courseschedule/shared';
 import { CheckinRepository } from '../data/repositories/checkinRepository';
 import { useAppStore } from './useAppStore';
+import { usePointsStore } from './usePointsStore';
 
 /** 打卡 Store 状态接口 */
 interface CheckinState {
@@ -89,6 +90,7 @@ export const useCheckinStore = create<CheckinState>((set, get) => ({
     };
     await checkinRepo.create(record);
     await get().loadAll();
+    await usePointsStore.getState().load();
   },
 
   uncheckin: async (refType, refId, date) => {
@@ -97,6 +99,8 @@ export const useCheckinStore = create<CheckinState>((set, get) => ({
     if (record) {
       await checkinRepo.remove(record.id);
       await get().loadAll();
+      // 派生积分随打卡记录消失，余额即时回冲
+      await usePointsStore.getState().load();
     }
   },
 

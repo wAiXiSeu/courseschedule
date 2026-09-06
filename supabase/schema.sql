@@ -166,13 +166,68 @@ create table if not exists "checkinRecords" (
   "userId"    uuid    not null default auth.uid(),
   "familyId"  text    not null,
   "childId"   text    not null,
-  "refType"   text    not null check ("refType" in ('plan_task', 'review_task')),
+  -- course_rule：课程到课打卡，"refId" 存排课规则 id，配合 "date" 唯一定位一次上课
+  "refType"   text    not null
+              check ("refType" in ('plan_task', 'review_task', 'course_rule')),
   "refId"     text    not null,
   "date"      text    not null,
   "doneAt"    bigint  not null,
   "isMakeup"  boolean not null default false,
   "createdAt" bigint  not null,
   "updatedAt" bigint  not null
+);
+
+/* ─────────────── 积分与奖励 ───────────────
+   积分余额 = 由打卡/错题实时派生的分 + 手工加减 − 已确认兑换。
+   派生部分不落库（撤销打卡即自动回冲），本段只存两类真实发生的账。 */
+
+-- 家长手工加减积分流水（"points" 可为负，如奖励计划外努力或抵扣违规）
+create table if not exists "pointAdjustments" (
+  "id"        text    primary key,
+  "userId"    uuid    not null default auth.uid(),
+  "familyId"  text    not null,
+  "childId"   text    not null,
+  "date"      text    not null,
+  "points"    integer not null,
+  "reason"    text    not null,
+  "createdAt" bigint  not null,
+  "updatedAt" bigint  not null
+);
+
+-- 兑换品：家长自定义标题、贴纸图标与价格；isActive=false 仅下架，不删历史
+create table if not exists "rewards" (
+  "id"          text    primary key,
+  "userId"      uuid    not null default auth.uid(),
+  "familyId"    text    not null,
+  "childId"     text    not null,
+  "title"       text    not null,
+  "emoji"       text    not null,
+  "description" text,
+  "cost"        integer not null check ("cost" > 0),
+  "isActive"    boolean not null default true,
+  "createdAt"   bigint  not null,
+  "updatedAt"   bigint  not null
+);
+
+-- 兑换单：孩子下单 → 家长确认才真正扣积分。
+-- title/emoji/cost 为下单时快照，奖励之后改名、改价或下架都不影响历史单据。
+create table if not exists "redemptions" (
+  "id"          text    primary key,
+  "userId"      uuid    not null default auth.uid(),
+  "familyId"    text    not null,
+  "childId"     text    not null,
+  "rewardId"    text    not null,
+  "rewardTitle" text    not null,
+  "rewardEmoji" text    not null,
+  "cost"        integer not null,
+  "status"      text    not null default 'pending'
+                check ("status" in ('pending', 'approved', 'rejected')),
+  "requestedBy" uuid    not null default auth.uid(),
+  "requestedAt" bigint  not null,
+  "reviewedBy"  uuid,
+  "reviewedAt"  bigint,
+  "createdAt"   bigint  not null,
+  "updatedAt"   bigint  not null
 );
 
 /* ─────────────── 错题本 ─────────────── */
@@ -219,6 +274,9 @@ create index if not exists "planTasks_plan"        on "planTasks"           ("pl
 create index if not exists "reviewItems_family"    on "reviewItems"         ("familyId", "childId");
 create index if not exists "reviewTasks_item"      on "reviewTasks"         ("reviewItemId", "dueDate");
 create index if not exists "mistakes_family"       on "mistakes"            ("familyId", "childId", "mistakeDate");
+create index if not exists "pointAdjustments_family" on "pointAdjustments"  ("familyId", "childId", "date");
+create index if not exists "rewards_family"         on "rewards"             ("familyId", "childId");
+create index if not exists "redemptions_family"     on "redemptions"         ("familyId", "childId", "status");
 create unique index if not exists "familyMembers_uq_email"
   on "familyMembers" ("familyId", lower("email"));
 create unique index if not exists "familyMembers_uq_user"
@@ -312,6 +370,24 @@ create policy "family_access" on "checkinRecords" for all to authenticated
 alter table "mistakes" enable row level security;
 drop policy if exists "family_access" on "mistakes";
 create policy "family_access" on "mistakes" for all to authenticated
+  using ("familyId" in (select "myFamilyIds"()))
+  with check ("familyId" in (select "myFamilyIds"()));
+
+alter table "pointAdjustments" enable row level security;
+drop policy if exists "family_access" on "pointAdjustments";
+create policy "family_access" on "pointAdjustments" for all to authenticated
+  using ("familyId" in (select "myFamilyIds"()))
+  with check ("familyId" in (select "myFamilyIds"()));
+
+alter table "rewards" enable row level security;
+drop policy if exists "family_access" on "rewards";
+create policy "family_access" on "rewards" for all to authenticated
+  using ("familyId" in (select "myFamilyIds"()))
+  with check ("familyId" in (select "myFamilyIds"()));
+
+alter table "redemptions" enable row level security;
+drop policy if exists "family_access" on "redemptions";
+create policy "family_access" on "redemptions" for all to authenticated
   using ("familyId" in (select "myFamilyIds"()))
   with check ("familyId" in (select "myFamilyIds"()));
 

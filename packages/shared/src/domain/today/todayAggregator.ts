@@ -20,7 +20,7 @@ import type {
 import { expandForDate } from '../schedule/occurrence';
 import { isReviewDue } from '../review/reviewScheduler';
 import {
-  calculateTotalCheckinDays,
+  calculateCurrentStreak,
   calculateWeekStrip,
 } from '../checkin/streak';
 
@@ -126,8 +126,8 @@ export function aggregateTodayView(params: TodayAggregatorParams): TodayViewData
   const todayDone = tasks.filter((t) => t.done).length;
   const todayTotal = tasks.length;
 
-  // 累计打卡天数（新需求）
-  const streak = calculateTotalCheckinDays(checkinRecords);
+  // 当前连续打卡天数
+  const streak = calculateCurrentStreak(checkinRecords, date);
 
   // 本周打卡格子（周一起始）
   const weekStart = getMondayOfWeek(date);
