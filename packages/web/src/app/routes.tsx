@@ -1,7 +1,8 @@
 /**
  * 路由表定义
  *
- * 登录页独立于主布局；其余 6 个页签（今日 / 课程表 / 计划 / 打卡 / 错题本 / 科目）
+ * 登录页独立于主布局；其余页签（今日 / 课程表 / 计划 / 打卡 / 错题本 / 设置）
+ * 与从顶栏进入的「积分奖励」、从设置页进入的「科目管理」「家庭空间」，
  * 统一经受保护布局路由（鉴权守卫 + AppLayout）渲染。
  */
 
@@ -12,6 +13,8 @@ import { AppLayout } from './AppLayout';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useFamilyStore } from '../stores/useFamilyStore';
 import { useSubjectStore } from '../stores/useSubjectStore';
+import { usePointsStore } from '../stores/usePointsStore';
+import { useRewardStore } from '../stores/useRewardStore';
 
 /* ── 懒加载页面组件 ── */
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));
@@ -19,8 +22,10 @@ const TodayPage = lazy(() => import('../features/today/TodayPage'));
 const SchedulePage = lazy(() => import('../features/schedule/SchedulePage'));
 const PlansPage = lazy(() => import('../features/plans/PlansPage'));
 const CheckinPage = lazy(() => import('../features/checkin/CheckinPage'));
+const PointsPage = lazy(() => import('../features/points/PointsPage'));
 const MistakesPage = lazy(() => import('../features/mistakes/MistakesPage'));
 const SubjectsPage = lazy(() => import('../features/subjects/SubjectsPage'));
+const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 const FamilyPage = lazy(() => import('../features/family/FamilyPage'));
 const JoinPage = lazy(() => import('../features/family/JoinPage'));
 
@@ -44,6 +49,8 @@ const ProtectedLayout: React.FC = () => {
   const familyError = useFamilyStore((state) => state.error);
   const currentFamilyId = useFamilyStore((state) => state.currentFamilyId);
   const loadSubjects = useSubjectStore((state) => state.load);
+  const loadPoints = usePointsStore((state) => state.load);
+  const loadRewards = useRewardStore((state) => state.loadAll);
 
   useEffect(() => {
     if (status === 'signedIn') void bootstrapFamily();
@@ -52,9 +59,12 @@ const ProtectedLayout: React.FC = () => {
   const spaceReady = status === 'signedIn' && Boolean(currentFamilyId) && !familyLoading;
 
   useEffect(() => {
-    if (spaceReady) void loadSubjects();
-    // currentFamilyId 变化 = 换了数据边界，科目必须重新载入
-  }, [spaceReady, currentFamilyId, loadSubjects]);
+    if (!spaceReady) return;
+    // currentFamilyId 变化 = 换了数据边界，科目 / 积分账本 / 兑换品都要重新载入
+    void loadSubjects();
+    void loadPoints();
+    void loadRewards();
+  }, [spaceReady, currentFamilyId, loadSubjects, loadPoints, loadRewards]);
 
   if (status === 'loading') return <PageLoading />;
   if (status === 'signedOut') return <Navigate to="/login" replace />;
@@ -119,10 +129,14 @@ export const AppRoutes: React.FC = () => (
       <Route path="/plans" element={<PlansPage />} />
       {/* 打卡（P0-6/P0-7） */}
       <Route path="/checkin" element={<CheckinPage />} />
+      {/* 积分奖励（顶栏余额胶囊进入） */}
+      <Route path="/points" element={<PointsPage />} />
       {/* 错题本（P0-8/P0-9） */}
       <Route path="/mistakes" element={<MistakesPage />} />
-      {/* 科目管理 */}
+      {/* 科目管理（从设置页进入的二级页） */}
       <Route path="/subjects" element={<SubjectsPage />} />
+      {/* 设置（使用模式 / 科目 / 家庭空间 / 退出登录） */}
+      <Route path="/settings" element={<SettingsPage />} />
       {/* 家庭空间（成员邀请与切换） */}
       <Route path="/family" element={<FamilyPage />} />
       {/* 兜底 */}

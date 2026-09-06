@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -23,6 +24,7 @@ import {
   IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -207,6 +209,7 @@ const SubjectFormDialog: React.FC<SubjectFormDialogProps> = ({
  * 科目管理页面
  */
 export const SubjectsPage: React.FC = () => {
+  const navigate = useNavigate();
   const subjects = useSubjectStore((s) => s.subjects);
   const addSubject = useSubjectStore((s) => s.addSubject);
   const updateSubject = useSubjectStore((s) => s.updateSubject);
@@ -285,7 +288,17 @@ export const SubjectsPage: React.FC = () => {
           pb: 1,
         }}
       >
-        <Typography sx={pageHeadingSx}>科目管理</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            onClick={() => navigate(-1)}
+            aria-label="返回设置"
+            title="返回"
+            sx={{ border: BORDER, bgcolor: T.paper, boxShadow: `2px 2px 0 0 ${T.ink}` }}
+          >
+            <ArrowBackIcon fontSize="small" />
+          </IconButton>
+          <Typography sx={pageHeadingSx}>科目管理</Typography>
+        </Box>
         {isParent && (
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
