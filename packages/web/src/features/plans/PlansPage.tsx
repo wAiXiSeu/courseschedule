@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { usePlanData } from './usePlanData';
 import { useReviewData } from './useReviewData';
 import { usePlanStore } from '../../stores/usePlanStore';
+import type { PlanTaskFormData } from '../../stores/usePlanStore';
 import { useReviewStore } from '../../stores/useReviewStore';
 import { useIsParent } from '../../stores/useAppStore';
 import { PlanCard } from './PlanCard';
@@ -30,7 +31,7 @@ import { PlanFormDialog } from './PlanFormDialog';
 import { PlanTaskFormDialog } from './PlanTaskFormDialog';
 import { ReviewCard } from './ReviewCard';
 import { ReviewItemFormDialog } from './ReviewItemFormDialog';
-import type { LearningPlan, ReviewItem } from '@courseschedule/shared';
+import type { LearningPlan, PlanTask, ReviewItem } from '@courseschedule/shared';
 import { T, pageHeadingSx } from '../../app/tokens';
 
 /**
@@ -46,7 +47,7 @@ export const PlansPage: React.FC = () => {
 
   // 计划任务对话框状态
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<null>(null);
+  const [editingTask, setEditingTask] = useState<PlanTask | null>(null);
   const [taskPlanId, setTaskPlanId] = useState<string>('');
 
   // 复习项对话框状态
@@ -54,7 +55,7 @@ export const PlansPage: React.FC = () => {
 
   // 删除确认对话框
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'plan' | 'review'; id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'plan' | 'review' | 'task'; id: string; name: string } | null>(null);
 
   // 数据 Hooks
   const planData = usePlanData();
@@ -67,6 +68,7 @@ export const PlansPage: React.FC = () => {
   const createTask = usePlanStore((s) => s.createTask);
   const updateTask = usePlanStore((s) => s.updateTask);
   const deleteTask = usePlanStore((s) => s.deleteTask);
+  const toggleTaskActive = usePlanStore((s) => s.toggleTaskActive);
   const createReviewItem = useReviewStore((s) => s.createItem);
   const updateReviewItem = useReviewStore((s) => s.updateItem);
   const deleteReviewItem = useReviewStore((s) => s.deleteItem);
@@ -82,9 +84,13 @@ export const PlansPage: React.FC = () => {
     }
   };
 
-  // 处理计划任务提交
-  const handleTaskSubmit = async (data: any) => {
-    await createTask(data);
+  // 处理计划任务提交（editingTask 非空即编辑既有任务）
+  const handleTaskSubmit = async (data: PlanTaskFormData) => {
+    if (editingTask) {
+      await updateTask(editingTask, data);
+    } else {
+      await createTask(data);
+    }
   };
 
   // 处理复习项提交
@@ -98,8 +104,26 @@ export const PlansPage: React.FC = () => {
     setPlanDialogOpen(true);
   };
 
+  // 处理添加任务
+  const handleAddTask = (plan: LearningPlan) => {
+    setEditingTask(null);
+    setTaskPlanId(plan.id);
+    setTaskDialogOpen(true);
+  };
+
+  // 处理编辑单条任务
+  const handleEditTask = (task: PlanTask) => {
+    setEditingTask(task);
+    setTaskPlanId(task.planId);
+    setTaskDialogOpen(true);
+  };
+
   // 处理删除确认
-  const handleDeleteConfirm = (type: 'plan' | 'review', id: string, name: string) => {
+  const handleDeleteConfirm = (
+    type: 'plan' | 'review' | 'task',
+    id: string,
+    name: string
+  ) => {
     setDeleteTarget({ type, id, name });
     setDeleteConfirmOpen(true);
   };
@@ -109,17 +133,13 @@ export const PlansPage: React.FC = () => {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'plan') {
       await deletePlan(deleteTarget.id);
+    } else if (deleteTarget.type === 'task') {
+      await deleteTask(deleteTarget.id);
     } else {
       await deleteReviewItem(deleteTarget.id);
     }
     setDeleteConfirmOpen(false);
     setDeleteTarget(null);
-  };
-
-  // 处理添加任务
-  const handleAddTask = (plan: LearningPlan) => {
-    setTaskPlanId(plan.id);
-    setTaskDialogOpen(true);
   };
 
   return (
@@ -171,11 +191,17 @@ export const PlansPage: React.FC = () => {
               progress={planData.getPlanProgress(plan)}
               todayTaskCount={planData.getTodayTaskCount(plan.id)}
               totalTaskCount={planData.getTasksByPlan(plan.id).length}
+              tasks={planData.getTasksByPlan(plan.id)}
               onEdit={isParent ? handleEditPlan : undefined}
               onDelete={
                 isParent ? (p) => handleDeleteConfirm('plan', p.id, p.title) : undefined
               }
               onAddTask={isParent ? handleAddTask : undefined}
+              onEditTask={isParent ? handleEditTask : undefined}
+              onDeleteTask={
+                isParent ? (t) => handleDeleteConfirm('task', t.id, t.title) : undefined
+              }
+              onToggleTaskActive={isParent ? (t) => void toggleTaskActive(t.id) : undefined}
             />
           ))}
           {isParent && (
@@ -252,6 +278,7 @@ export const PlansPage: React.FC = () => {
       <PlanTaskFormDialog
         open={taskDialogOpen}
         planId={taskPlanId}
+        task={editingTask}
         onClose={() => setTaskDialogOpen(false)}
         onSubmit={handleTaskSubmit}
       />
@@ -269,7 +296,9 @@ export const PlansPage: React.FC = () => {
         <DialogContent>
           <Typography>确定要删除「{deleteTarget?.name}」吗？</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            删除后不可恢复，相关任务也将一并删除。
+            {deleteTarget?.type === 'plan'
+              ? '删除后不可恢复，该计划下的任务也将一并删除。'
+              : '删除后不可恢复。'}
           </Typography>
         </DialogContent>
         <DialogActions>
