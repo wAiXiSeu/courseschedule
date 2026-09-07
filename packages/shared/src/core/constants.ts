@@ -139,7 +139,7 @@ export const POINT_RULES = {
   planTask: 10,
   /** 到期复习任务打卡（复习更反人性，略高） */
   reviewTask: 12,
-  /** 课程到课 */
+  /** 校外课程到课（校内课程不参与打卡） */
   attendance: 8,
   /** 错题转为已掌握 */
   mistakeMastered: 5,

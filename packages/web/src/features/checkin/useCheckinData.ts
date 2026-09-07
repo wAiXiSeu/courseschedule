@@ -160,7 +160,8 @@ export const useCheckinData = (): CheckinDataResult => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childId, currentDate]);
 
-  // 今日课程到课视图：规则展开 → 标记已取消与已勾
+  // 今日课程到课视图：规则展开 → 剔除校内课程 → 标记已取消与已勾
+  // 校内课程由校方统一管理，不进家庭打卡清单、不计积分
   const todayCourses = useMemo<AttendanceView[]>(() => {
     const cancelledBy = new Map(
       cancellations
@@ -173,20 +174,22 @@ export const useCheckinData = (): CheckinDataResult => {
         .map((r) => r.refId)
     );
 
-    return expandForDate(rules, courses, currentDate).map((occurrence) => {
-      const cancelKey = cancellationKey(occurrence.ruleId, occurrence.date);
-      return {
-        key: `course_rule:${occurrence.ruleId}`,
-        ruleId: occurrence.ruleId,
-        courseName: occurrence.courseName,
-        startTime: occurrence.startTime,
-        endTime: occurrence.endTime,
-        color: occurrence.color,
-        cancelled: cancelledBy.has(cancelKey),
-        cancelledReason: cancelledBy.get(cancelKey),
-        done: doneRuleIds.has(occurrence.ruleId),
-      };
-    });
+    return expandForDate(rules, courses, currentDate)
+      .filter((occurrence) => occurrence.courseType !== 'school')
+      .map((occurrence) => {
+        const cancelKey = cancellationKey(occurrence.ruleId, occurrence.date);
+        return {
+          key: `course_rule:${occurrence.ruleId}`,
+          ruleId: occurrence.ruleId,
+          courseName: occurrence.courseName,
+          startTime: occurrence.startTime,
+          endTime: occurrence.endTime,
+          color: occurrence.color,
+          cancelled: cancelledBy.has(cancelKey),
+          cancelledReason: cancelledBy.get(cancelKey),
+          done: doneRuleIds.has(occurrence.ruleId),
+        };
+      });
   }, [rules, courses, cancellations, records, currentDate]);
 
   // 计算统计数据

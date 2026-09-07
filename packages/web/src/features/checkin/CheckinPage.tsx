@@ -257,11 +257,11 @@ export const CheckinPage: React.FC = () => {
         )}
       </Box>
 
-      {/* 今日课程到课 */}
+      {/* 今日校外课程到课（校内课程不参与打卡） */}
       {todayCourses.length > 0 && (
         <Box sx={{ px: 2, mt: 4 }}>
           <Typography sx={{ ...sectionTitleSx, fontSize: '1.0625rem', mb: 1.5 }}>
-            今天的课 · 到课打卡
+            今天的校外课 · 到课打卡
           </Typography>
           <Box
             sx={{
@@ -335,7 +335,7 @@ export const CheckinPage: React.FC = () => {
             </List>
           </Box>
           <Typography variant="caption" sx={{ display: 'block', mt: 1, color: T.textMuted, fontWeight: 600 }}>
-            请假的课时不用勾，取消记录由家长在课程表里维护。
+            校内课程由学校统一管理，不参与打卡；校外课请假请家长在课程表里记「取消」。
           </Typography>
         </Box>
       )}
