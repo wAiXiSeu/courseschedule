@@ -53,16 +53,14 @@ export const useTodayData = (): TodayDataResult => {
     setError(null);
 
     try {
-      // 确保课程和规则已加载
-      if (courses.length === 0 && rules.length === 0) {
-        await loadAll();
-      }
-
-      // 并行查询其他数据
-      const [planTasks, reviewTasks, checkinRecords] = await Promise.all([
-        planTaskRepo.listActive(childId),
-        reviewTaskRepo.listByChild(childId),
-        checkinRepo.listByDate(childId, currentDate),
+      // 课程/规则与任务/打卡互不依赖，并行拉取，避免「先课表后任务」两波串行
+      const [, [planTasks, reviewTasks, checkinRecords]] = await Promise.all([
+        courses.length === 0 && rules.length === 0 ? loadAll() : Promise.resolve(),
+        Promise.all([
+          planTaskRepo.listActive(childId),
+          reviewTaskRepo.listByChild(childId),
+          checkinRepo.listByDate(childId, currentDate),
+        ]),
       ]);
 
       // 聚合今日视图

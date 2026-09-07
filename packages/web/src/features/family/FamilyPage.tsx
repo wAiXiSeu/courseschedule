@@ -6,7 +6,7 @@
  * 对方用该邮箱注册/登录后打开链接确认，即共同管理该空间数据。
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -119,9 +119,15 @@ export const FamilyPage: React.FC = () => {
   const declineInvite = useFamilyStore((state) => state.declineInvite);
   const removeMember = useFamilyStore((state) => state.removeMember);
   const leaveFamily = useFamilyStore((state) => state.leaveFamily);
+  const refreshMembers = useFamilyStore((state) => state.refreshMembers);
   const myUid = useAuthStore((state) => state.session?.user.id);
   const isOwner = useIsFamilyOwner(currentFamilyId);
   const isParent = useAppStore((state) => state.mode === 'parent');
+
+  // bootstrap 不再代拉成员列表（避免阻塞所有页面），本页需要时自己拉
+  useEffect(() => {
+    if (currentFamilyId) void refreshMembers(currentFamilyId);
+  }, [currentFamilyId, refreshMembers]);
 
   const current = families.find((f) => f.id === currentFamilyId);
   const [inviteEmail, setInviteEmail] = useState('');

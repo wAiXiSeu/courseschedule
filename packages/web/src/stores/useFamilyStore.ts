@@ -63,22 +63,28 @@ export const useFamilyStore = create<FamilyState>()(
       bootstrap: async () => {
         set({ loading: true, error: null });
         try {
-          let families = await familyRepo.listMine();
+          const email = useAuthStore.getState().session?.user.email ?? '';
+
+          // 这条链挡在所有页面前面：能并行的都并行
+          const [loadedFamilies, invites] = await Promise.all([
+            familyRepo.listMine(),
+            email ? familyRepo.listInvitesForEmail(email) : Promise.resolve([]),
+          ]);
+          let families = loadedFamilies;
+
           if (families.length === 0) {
             const uid = useAuthStore.getState().session?.user.id;
             if (!uid) throw new Error('未登录，无法创建个人空间');
             const personal = await familyRepo.create('我的空间', uid);
             families = [personal];
           }
-          const email = useAuthStore.getState().session?.user.email ?? '';
-          const invites = email ? await familyRepo.listInvitesForEmail(email) : [];
 
           const stored = get().currentFamilyId;
           const currentFamilyId =
             families.find((f) => f.id === stored)?.id ?? families[0].id;
 
+          // 成员列表只由 FamilyPage 挂载时自取，不在这里阻塞所有页面
           set({ families, invites, currentFamilyId, loading: false });
-          await get().refreshMembers(currentFamilyId);
         } catch (err) {
           fail(set, err);
         }
