@@ -14,7 +14,6 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useFamilyStore } from '../stores/useFamilyStore';
 import { useSubjectStore } from '../stores/useSubjectStore';
 import { usePointsStore } from '../stores/usePointsStore';
-import { useRewardStore } from '../stores/useRewardStore';
 
 /* ── 懒加载页面组件 ── */
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));
@@ -50,7 +49,6 @@ const ProtectedLayout: React.FC = () => {
   const currentFamilyId = useFamilyStore((state) => state.currentFamilyId);
   const loadSubjects = useSubjectStore((state) => state.load);
   const loadPoints = usePointsStore((state) => state.load);
-  const loadRewards = useRewardStore((state) => state.loadAll);
 
   useEffect(() => {
     if (status === 'signedIn') void bootstrapFamily();
@@ -60,11 +58,13 @@ const ProtectedLayout: React.FC = () => {
 
   useEffect(() => {
     if (!spaceReady) return;
-    // currentFamilyId 变化 = 换了数据边界，科目 / 积分账本 / 兑换品都要重新载入
+    // currentFamilyId 变化 = 换了数据边界，科目要重新载入
     void loadSubjects();
-    void loadPoints();
-    void loadRewards();
-  }, [spaceReady, currentFamilyId, loadSubjects, loadPoints, loadRewards]);
+    // 积分账本只为顶栏 ⭐ 数字，不该跟首屏关键请求抢路：挪到下一拍再拉。
+    // /points 页挂载时会自取（store 有单飞去重），兑换品则完全由 /points 自取。
+    const timer = window.setTimeout(() => void loadPoints(), 0);
+    return () => window.clearTimeout(timer);
+  }, [spaceReady, currentFamilyId, loadSubjects, loadPoints]);
 
   if (status === 'loading') return <PageLoading />;
   if (status === 'signedOut') return <Navigate to="/login" replace />;
