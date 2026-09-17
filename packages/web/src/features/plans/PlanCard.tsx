@@ -16,6 +16,7 @@ import {
   LinearProgress,
   Chip,
   IconButton,
+  Button,
   Switch,
   Box,
 } from '@mui/material';
@@ -24,6 +25,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import EditCalendarIcon from '@mui/icons-material/EditCalendar';
 import type { LearningPlan, PlanTask } from '@courseschedule/shared';
 import { getWeekdayLabel, isPlanTaskDueOn } from '@courseschedule/shared';
 import { useSubjectResolver } from '../../stores/useSubjectStore';
@@ -72,6 +74,8 @@ interface PlanCardProps {
   onDeleteTask?: (task: PlanTask) => void;
   /** 切换任务启用状态；未传则不渲染开关 */
   onToggleTaskActive?: (task: PlanTask) => void;
+  /** 点击补打卡（双端可用）；未传则不渲染该入口 */
+  onMakeupCheckin?: (plan: LearningPlan) => void;
 }
 
 /**
@@ -89,6 +93,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   onEditTask,
   onDeleteTask,
   onToggleTaskActive,
+  onMakeupCheckin,
 }) => {
   // 解析科目（中文名 + 颜色）
   const resolve = useSubjectResolver();
@@ -295,8 +300,18 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </Box>
       </Collapse>
 
-      {(onAddTask || onEdit || onDelete) && (
-        <CardActions sx={{ pt: 0 }}>
+      {(onAddTask || onEdit || onDelete || onMakeupCheckin) && (
+        <CardActions sx={{ pt: 0, gap: 0.5 }}>
+          {onMakeupCheckin && (
+            <Button
+              size="small"
+              startIcon={<EditCalendarIcon fontSize="small" />}
+              onClick={() => onMakeupCheckin(plan)}
+              sx={{ fontWeight: 800, fontSize: '0.78rem' }}
+            >
+              补打卡
+            </Button>
+          )}
           {onAddTask && (
             <IconButton
               size="small"

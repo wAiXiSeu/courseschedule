@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { usePlanData } from './usePlanData';
@@ -29,6 +31,7 @@ import { useIsParent } from '../../stores/useAppStore';
 import { PlanCard } from './PlanCard';
 import { PlanFormDialog } from './PlanFormDialog';
 import { PlanTaskFormDialog } from './PlanTaskFormDialog';
+import { MakeupCheckinDialog } from './MakeupCheckinDialog';
 import { ReviewCard } from './ReviewCard';
 import { ReviewItemFormDialog } from './ReviewItemFormDialog';
 import type { LearningPlan, PlanTask, ReviewItem } from '@courseschedule/shared';
@@ -52,6 +55,10 @@ export const PlansPage: React.FC = () => {
 
   // 复习项对话框状态
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+
+  // 补打卡弹窗（双端可用）与提交提示
+  const [makeupPlan, setMakeupPlan] = useState<LearningPlan | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   // 删除确认对话框
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -202,6 +209,7 @@ export const PlansPage: React.FC = () => {
                 isParent ? (t) => handleDeleteConfirm('task', t.id, t.title) : undefined
               }
               onToggleTaskActive={isParent ? (t) => void toggleTaskActive(t.id) : undefined}
+              onMakeupCheckin={(p) => setMakeupPlan(p)}
             />
           ))}
           {isParent && (
@@ -289,6 +297,34 @@ export const PlansPage: React.FC = () => {
         onClose={() => setReviewDialogOpen(false)}
         onSubmit={handleReviewSubmit}
       />
+
+      {/* 补打卡弹窗（按天补，双端可用） */}
+      {makeupPlan && (
+        <MakeupCheckinDialog
+          open={Boolean(makeupPlan)}
+          plan={makeupPlan}
+          planTasks={planData.getTasksByPlan(makeupPlan.id)}
+          onClose={() => setMakeupPlan(null)}
+          onDone={(message) => setToast(message)}
+        />
+      )}
+
+      {/* 补打卡结果提示 */}
+      <Snackbar
+        open={Boolean(toast)}
+        autoHideDuration={3600}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setToast(null)}
+          sx={{ fontWeight: 800 }}
+        >
+          {toast}
+        </Alert>
+      </Snackbar>
 
       {/* 删除确认对话框 */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>

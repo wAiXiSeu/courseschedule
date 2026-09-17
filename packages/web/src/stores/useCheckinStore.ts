@@ -34,8 +34,18 @@ interface CheckinState {
 
   /** 加载所有打卡记录 */
   loadAll: () => Promise<void>;
-  /** 打卡（创建或更新记录） */
-  checkin: (refType: CheckinRefType, refId: string, date: ISODate) => Promise<void>;
+  /**
+   * 打卡（创建或更新记录）
+   *
+   * @param isMakeup 是否为补卡。补卡分减半，且该天不计入连续天数与里程碑
+   *   （详见 shared 的 collectGenuineDates），累计天数与本周格子照常计入。
+   */
+  checkin: (
+    refType: CheckinRefType,
+    refId: string,
+    date: ISODate,
+    isMakeup?: boolean
+  ) => Promise<void>;
   /** 取消打卡 */
   uncheckin: (refType: CheckinRefType, refId: string, date: ISODate) => Promise<void>;
   /** 获取统计：累计打卡天数 */
@@ -68,7 +78,7 @@ export const useCheckinStore = create<CheckinState>((set, get) => ({
     }
   },
 
-  checkin: async (refType, refId, date) => {
+  checkin: async (refType, refId, date, isMakeup = false) => {
     const childId = useAppStore.getState().childId;
     // 检查是否已存在打卡记录
     const existing = await checkinRepo.findByDateAndRef(childId, refType, refId, date);
@@ -86,7 +96,7 @@ export const useCheckinStore = create<CheckinState>((set, get) => ({
       refId,
       date,
       doneAt: now,
-      isMakeup: false,
+      isMakeup,
     };
     await checkinRepo.create(record);
     await get().loadAll();

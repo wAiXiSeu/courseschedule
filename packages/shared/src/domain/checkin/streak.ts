@@ -3,6 +3,10 @@
  *
  * 提供累计打卡天数、当前 / 最长连续天数、本周打卡格子、今日完成率。
  * 「连续打卡天数」曾按 D5 决策移除，积分系统需要里程碑奖励，已恢复。
+ *
+ * 补卡口径：某天至少要有一条非补卡记录才算「真实打卡日」，
+ * 连续天数与里程碑只看真实打卡日，避免事后补齐凑出连续奖励；
+ * 累计打卡天数与本周格子仍把补卡日算进去。
  */
 
 import type { ISODate, CheckInRecord, TaskView } from '../models';
@@ -98,7 +102,7 @@ export function calculateCompletionRate(
 }
 
 export function calculateCurrentStreak(records: CheckInRecord[], today: ISODate): number {
-  const dates = toCheckinDateSet(records);
+  const dates = collectGenuineDates(records);
   if (dates.size === 0) return 0;
 
   // 今天还没打卡不算断：从昨天起往回数
@@ -117,11 +121,12 @@ export function calculateCurrentStreak(records: CheckInRecord[], today: ISODate)
  * 计算历史最长连续打卡天数
  *
  * 里程碑奖励按此发放：一旦达到某档，之后即使断签也不会收回（只降不升不符合直觉）。
+ * 只统计真实打卡日，补卡日不计入。
  *
  * @param records 打卡记录列表
  */
 export function calculateLongestStreak(records: CheckInRecord[]): number {
-  const dates = Array.from(toCheckinDateSet(records)).sort();
+  const dates = Array.from(collectGenuineDates(records)).sort();
   if (dates.length === 0) return 0;
 
   let longest = 1;
@@ -133,11 +138,16 @@ export function calculateLongestStreak(records: CheckInRecord[]): number {
   return longest;
 }
 
-/** 有打卡记录的日期集合（同日多条只留一个日期） */
-function toCheckinDateSet(records: CheckInRecord[]): Set<string> {
+/**
+ * 真实打卡日集合：某天至少有一条非补卡记录才算
+ *
+ * 补卡是事后纠错，不计入连续天数与里程碑（否则事后补齐即可凑出连续 7 天拿奖），
+ * 但仍计入「累计打卡天数」与本周格子 —— 孩子确实做了那件事，只是晚勾了。
+ */
+export function collectGenuineDates(records: CheckInRecord[]): Set<string> {
   const dates = new Set<string>();
   for (const record of records ?? []) {
-    dates.add(record.date);
+    if (!record.isMakeup) dates.add(record.date);
   }
   return dates;
 }

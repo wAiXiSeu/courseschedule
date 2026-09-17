@@ -27,7 +27,7 @@ import {
 } from '../models';
 import { POINT_RULES, STREAK_MILESTONES } from '../../core/constants';
 import { addDays, getWeekday, parseISODate, toISODate } from '../../core/utils/date';
-import { calculateLongestStreak } from '../checkin/streak';
+import { calculateLongestStreak, collectGenuineDates } from '../checkin/streak';
 
 /** 当日满额与复习任务判定所需的输入 */
 export interface PointLedgerParams {
@@ -110,8 +110,13 @@ function dateOf(epochMs: number): ISODate {
   return toISODate(new Date(epochMs));
 }
 
-/** 该任务在 date 当天是否已经存在（避免新建任务追溯性地改写历史） */
-function existedOn(createdAt: number, date: ISODate): boolean {
+/**
+ * 该任务在 date 当天是否已经存在
+ *
+ * 避免新建任务追溯性地改写历史：昨天才建的任务，不该出现在上周某天的应完成清单里。
+ * 满额奖与补打卡候选日都用这一条判定。
+ */
+export function taskExistedOn(createdAt: number, date: ISODate): boolean {
   return createdAt < parseISODate(date).getTime() + 86_400_000;
 }
 
@@ -165,17 +170,17 @@ export function deriveDailyGoalEntries(params: PointLedgerParams): PointEntry[] 
   const entries: PointEntry[] = [];
 
   for (const date of dates) {
-    // 顶栏可切到未来日期打卡；未到的一天不参与满额判定，只结算基础分
+    // 未来日期不参与满额判定（当前无日期切换入口，防御性保留）
     if (date > today) continue;
 
     const expectedPlan = planTasks.filter(
-      (task) => isPlanTaskDueOn(task, date) && existedOn(task.createdAt, date)
+      (task) => isPlanTaskDueOn(task, date) && taskExistedOn(task.createdAt, date)
     );
     const expectedReview = reviewTasks.filter(
       (task) =>
         task.dueDate === date &&
         task.status !== 'skipped' &&
-        existedOn(task.createdAt, date)
+        taskExistedOn(task.createdAt, date)
     );
 
     const expected = expectedPlan.length + expectedReview.length;
@@ -224,12 +229,13 @@ export function deriveMistakeEntries(mistakes: Mistake[]): PointEntry[] {
     }));
 }
 
-/** 派生「连续里程碑」流水：按最长连续纪录，每档只发一次 */
+/** 派生「连续里程碑」流水：按最长连续纪录，每档只发一次（补卡日不计入连续） */
 export function deriveMilestoneEntries(records: CheckInRecord[]): PointEntry[] {
+  const genuineDates = Array.from(collectGenuineDates(records)).sort();
   const longest = calculateLongestStreak(records);
   if (longest === 0) return [];
 
-  const runStart = findLongestRunStart(records);
+  const runStart = findLongestRunStart(genuineDates);
   if (!runStart) return [];
 
   return STREAK_MILESTONES.filter((m) => m.days <= longest).map((m) => {
@@ -246,9 +252,8 @@ export function deriveMilestoneEntries(records: CheckInRecord[]): PointEntry[] {
   });
 }
 
-/** 最长连续段的起始日 */
-function findLongestRunStart(records: CheckInRecord[]): ISODate | null {
-  const dates = Array.from(new Set(records.map((r) => r.date))).sort();
+/** 最长连续段的起始日（入参需已按日期升序的真实打卡日） */
+function findLongestRunStart(dates: ISODate[]): ISODate | null {
   if (dates.length === 0) return null;
 
   let bestRunStart = dates[0];
