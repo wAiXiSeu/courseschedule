@@ -127,6 +127,23 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 700, flexGrow: 1 }}>
             {plan.title}
           </Typography>
+          {/* 补打卡：紧挨状态标签，双端可用 */}
+          {onMakeupCheckin && (
+            <Button
+              size="small"
+              startIcon={<EditCalendarIcon fontSize="small" />}
+              onClick={() => onMakeupCheckin(plan)}
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.75rem',
+                py: 0.25,
+                minWidth: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              补打卡
+            </Button>
+          )}
           {/* 状态标签 */}
           {plan.status === 'active' && (
             <Chip label="进行中" size="small" color="success" />
@@ -300,18 +317,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </Box>
       </Collapse>
 
-      {(onAddTask || onEdit || onDelete || onMakeupCheckin) && (
+      {(onAddTask || onEdit || onDelete) && (
         <CardActions sx={{ pt: 0, gap: 0.5 }}>
-          {onMakeupCheckin && (
-            <Button
-              size="small"
-              startIcon={<EditCalendarIcon fontSize="small" />}
-              onClick={() => onMakeupCheckin(plan)}
-              sx={{ fontWeight: 800, fontSize: '0.78rem' }}
-            >
-              补打卡
-            </Button>
-          )}
           {onAddTask && (
             <IconButton
               size="small"
