@@ -20,7 +20,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  ListItemText,
   Typography,
 } from '@mui/material';
 import {
@@ -180,8 +179,8 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
       <DialogTitle sx={{ fontWeight: 800 }}>
         补打卡 · {plan.title}
       </DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600 }}>
+      <DialogContent>
+        <Typography variant="body2" sx={{ color: T.textMuted, fontWeight: 600, mb: 1.5 }}>
           选一天补上漏掉的打卡，只能补最近 {MAKEUP_WINDOW_DAYS} 天（今天请到打卡页勾）。
         </Typography>
 
@@ -189,6 +188,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
           <Box
             sx={{
               p: 2.5,
+              mb: 1.5,
               textAlign: 'center',
               borderRadius: 3,
               bgcolor: T.gray,
@@ -220,6 +220,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
                 gap: 1,
                 px: 1.5,
                 py: 1,
+                mb: 1.25,
                 cursor: 'pointer',
                 borderRadius: 2.5,
                 border: BORDER,
@@ -257,7 +258,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
 
         {/* 第二步：勾选当天任务 */}
         {picked && (
-          <Box sx={{ mt: 1, borderRadius: 2.5, border: BORDER, overflow: 'hidden' }}>
+          <Box sx={{ borderRadius: 2.5, border: BORDER, overflow: 'hidden' }}>
             {picked.dueTasks.map((task, index) => {
               const key = `${picked.date}:${task.id}`;
               const alreadyDone = doneKeys.has(key);
@@ -267,8 +268,10 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    gap: 1,
                     px: 1.5,
-                    py: 1,
+                    py: 1.25,
+                    minHeight: 56,
                     borderTop: index === 0 ? 'none' : `1px solid ${T.gray}`,
                   }}
                 >
@@ -276,26 +279,32 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
                     size="small"
                     checked={checked.has(task.id)}
                     onChange={() => toggle(task.id)}
+                    sx={{ p: 0.5, flexShrink: 0 }}
                   />
-                  <ListItemText
-                    primary={task.title}
-                    secondary={
-                      alreadyDone
+                  <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.4 }}>
+                      {task.title}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        lineHeight: 1.4,
+                        color: alreadyDone ? T.green : T.textMuted,
+                      }}
+                    >
+                      {alreadyDone
                         ? '这天已有打卡记录'
-                        : `完成后可得 ${pointsForCheckin('plan_task')} ⭐`
-                    }
-                    primaryTypographyProps={{ sx: { fontWeight: 700, fontSize: '0.9rem' } }}
-                    secondaryTypographyProps={{
-                      sx: { fontSize: '0.72rem', fontWeight: 600, color: alreadyDone ? T.green : T.textMuted },
-                    }}
-                  />
+                        : `完成后可得 ${pointsForCheckin('plan_task')} ⭐`}
+                    </Typography>
+                  </Box>
                 </Box>
               );
             })}
           </Box>
         )}
 
-        <Typography variant="caption" sx={{ color: T.textMuted, fontWeight: 600 }}>
+        <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: T.textMuted, fontWeight: 600 }}>
           补卡与正常打卡同分；但不计入连续天数与里程碑（累计打卡天数照常计入）。
         </Typography>
       </DialogContent>
