@@ -124,7 +124,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         variant="caption"
         sx={{ display: 'block', mt: 1.5, color: T.textMuted, fontWeight: 600 }}
       >
-        补卡计入「累计」与本周格子，但不计入连续天数与里程碑（补卡分值也减半）。
+        补卡计入「累计」与本周格子，但不计入连续天数与里程碑（分值同正常打卡）。
       </Typography>
     </Box>
   );

@@ -5,7 +5,7 @@
  * 选中后列出「该计划当天确实应完成」的任务供勾选。
  *
  * 口径提醒（由 shared 纯函数保证，这里只负责如实传 isMakeup）：
- * - 补卡分减半（POINT_RULES.makeupMultiplier）
+ * - 补卡与正常打卡同分，不打折
  * - 补卡日不计入连续天数与里程碑，但计入累计天数
  * - 当天任务靠补卡补齐，满额奖照发
  */
@@ -167,7 +167,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
       onDone?.(
         changed === 0
           ? '没有变化'
-          : `已补 ${picked.label} 的打卡，补卡分值减半且不计入连续天数`
+          : `已补 ${picked.label} 的打卡（不计入连续天数与里程碑）`
       );
       onClose();
     } finally {
@@ -282,7 +282,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
                     secondary={
                       alreadyDone
                         ? '这天已有打卡记录'
-                        : `补卡可得 ${pointsForCheckin('plan_task', true)} ⭐（正常 ${pointsForCheckin('plan_task', false)} ⭐）`
+                        : `完成后可得 ${pointsForCheckin('plan_task')} ⭐`
                     }
                     primaryTypographyProps={{ sx: { fontWeight: 700, fontSize: '0.9rem' } }}
                     secondaryTypographyProps={{
@@ -296,7 +296,7 @@ export const MakeupCheckinDialog: React.FC<MakeupCheckinDialogProps> = ({
         )}
 
         <Typography variant="caption" sx={{ color: T.textMuted, fontWeight: 600 }}>
-          补卡分值减半，且不计入连续天数与里程碑；累计打卡天数照常计入。
+          补卡与正常打卡同分；但不计入连续天数与里程碑（累计打卡天数照常计入）。
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

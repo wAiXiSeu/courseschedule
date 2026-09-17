@@ -145,8 +145,6 @@ export const POINT_RULES = {
   mistakeMastered: 5,
   /** 当日任务全部完成的满额奖励 */
   dailyGoalBonus: 20,
-  /** 补卡的任务分倍率（满额奖不受影响） */
-  makeupMultiplier: 0.5,
 } as const;
 
 /** 连续打卡里程碑档位：最长连续记录达到 days 时一次性发 points */

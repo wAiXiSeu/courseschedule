@@ -55,7 +55,7 @@ export const CheckinPage: React.FC = () => {
   const handleToggleCheckin = async (task: TaskView) => {
     if (task.done) {
       await uncheckin(task.refType, task.refId, currentDate);
-      const lost = pointsForCheckin(task.refType, false);
+      const lost = pointsForCheckin(task.refType);
       setFeedback({ text: `已撤销，退回 ${lost} ⭐`, reversed: true });
       await checkinData.refresh();
       return;
@@ -66,7 +66,7 @@ export const CheckinPage: React.FC = () => {
     if (task.refType === 'review_task') {
       await completeReviewTask(task.refId);
     }
-    setFeedback({ text: `+${pointsForCheckin(task.refType, false)} ⭐ 已入账`, reversed: false });
+    setFeedback({ text: `+${pointsForCheckin(task.refType)} ⭐ 已入账`, reversed: false });
     await checkinData.refresh();
   };
 
@@ -80,7 +80,7 @@ export const CheckinPage: React.FC = () => {
     } else {
       await checkin('course_rule', course.ruleId, currentDate);
       setFeedback({
-        text: `+${pointsForCheckin('course_rule', false)} ⭐ 到课已记录`,
+        text: `+${pointsForCheckin('course_rule')} ⭐ 到课已记录`,
         reversed: false,
       });
     }
@@ -224,7 +224,7 @@ export const CheckinPage: React.FC = () => {
                             />
                           )}
                           <Box sx={{ ml: 'auto', fontWeight: 800, fontSize: '0.8rem', color: T.textMuted }}>
-                            +{pointsForCheckin(task.refType, false)} ⭐
+                            +{pointsForCheckin(task.refType)} ⭐
                           </Box>
                         </Box>
                       }
@@ -322,7 +322,7 @@ export const CheckinPage: React.FC = () => {
                           <Box sx={{ ml: 'auto', fontWeight: 800, fontSize: '0.8rem', color: T.textMuted }}>
                             {course.cancelled
                               ? '已取消'
-                              : `+${pointsForCheckin('course_rule', false)} ⭐`}
+                              : `+${pointsForCheckin('course_rule')} ⭐`}
                           </Box>
                         </Box>
                       }

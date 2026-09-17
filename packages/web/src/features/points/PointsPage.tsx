@@ -413,7 +413,7 @@ export const PointsPage: React.FC = () => {
             </Box>
           ))}
           <Typography sx={{ mt: 1.5, fontSize: '0.78rem', color: T.textMuted, fontWeight: 600 }}>
-            补卡的任务分减半，且不计入连续天数与里程碑；撤销打卡时对应的积分会原路退回。
+            补卡与正常打卡同分，但不计入连续天数与里程碑；撤销打卡时对应的积分会原路退回。
           </Typography>
         </Box>
       </Box>

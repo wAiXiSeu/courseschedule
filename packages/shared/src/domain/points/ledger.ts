@@ -71,19 +71,18 @@ export interface MilestoneProgress {
 }
 
 /**
- * 单次打卡的分值（补卡减半，向下取整）
+ * 单次打卡的分值（只按来源区分）
  *
+ * 补卡与正常打卡同分 —— 孩子确实做了那件事，晚勾不该打折；
+ * 补卡与正常打卡的差别只体现在「不计入连续天数与里程碑」（见 collectGenuineDates）。
  * 也供打卡页即时反馈取数，保证弹给孩子的数字与流水一致。
  */
-export function pointsForCheckin(refType: CheckinRefType, isMakeup: boolean): number {
-  const base =
-    refType === 'plan_task'
-      ? POINT_RULES.planTask
-      : refType === 'review_task'
-        ? POINT_RULES.reviewTask
-        : POINT_RULES.attendance;
-
-  return isMakeup ? Math.floor(base * POINT_RULES.makeupMultiplier) : base;
+export function pointsForCheckin(refType: CheckinRefType): number {
+  return refType === 'plan_task'
+    ? POINT_RULES.planTask
+    : refType === 'review_task'
+      ? POINT_RULES.reviewTask
+      : POINT_RULES.attendance;
 }
 
 /**
@@ -127,9 +126,9 @@ function checkinEntry(record: CheckInRecord, titleOf: (r: CheckInRecord) => stri
     id: `${kind === 'attendance' ? 'att' : 'chk'}:${record.id}`,
     kind,
     date: record.date,
-    points: pointsForCheckin(record.refType, record.isMakeup),
+    points: pointsForCheckin(record.refType),
     title: titleOf(record),
-    note: record.isMakeup ? '补卡（分值减半）' : undefined,
+    note: record.isMakeup ? '补卡' : undefined,
     refId: record.id,
     sortAt: record.doneAt,
   };
