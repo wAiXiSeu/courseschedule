@@ -2,7 +2,7 @@
  * 课程表单弹窗
  *
  * 支持添加/编辑课程及其排课规则。
- * 课程不单独命名，标题即所选科目；字段：科目、类型(校内/校外)、地点、排课规则(星期+时间+生效区间)。
+ * 课程不单独命名，标题即所选科目；字段：科目、类型(校内/校外/充电)、地点、排课规则(星期+时间+生效区间)。
  * 支持"添加更多排课时间"（同一课程多条 ScheduleRule）。
  */
 
@@ -29,8 +29,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   type Course,
+  type CourseType,
   type ISODate,
   type SubjectCategory,
+  COURSE_TYPE_LABELS,
+  COURSE_TYPE_ORDER,
   SUBJECT_CATEGORY_LABELS,
   SUBJECT_CATEGORY_ORDER,
   getTodayISODate,
@@ -42,6 +45,8 @@ import { useSubjectStore } from '../../stores/useSubjectStore';
 
 interface CourseFormDialogProps {
   open: boolean;
+  /** 添加模式下的默认课程类型（未指定时回退「校外」） */
+  defaultType?: CourseType;
   /** 编辑模式时传入已有课程 */
   course?: Course;
   /** 编辑模式时传入该课程的排课规则 */
@@ -75,6 +80,7 @@ const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五
  */
 export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
   open,
+  defaultType,
   course,
   existingRules,
   onSave,
@@ -109,12 +115,13 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
       } else {
         setFormData({
           ...defaultFormData,
+          type: defaultType ?? defaultFormData.type,
           rules: [getDefaultRule()],
         });
       }
       setErrors({});
     }
-  }, [open, course, existingRules]);
+  }, [open, defaultType, course, existingRules]);
 
   // 校验表单
   const validate = (): boolean => {
@@ -218,8 +225,11 @@ export const CourseFormDialog: React.FC<CourseFormDialogProps> = ({
                 }))
               }
             >
-              <MenuItem value="school">校内</MenuItem>
-              <MenuItem value="extracurricular">校外</MenuItem>
+              {COURSE_TYPE_ORDER.map((t) => (
+                <MenuItem key={t} value={t}>
+                  {COURSE_TYPE_LABELS[t]}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 

@@ -18,6 +18,7 @@ import { useAppStore, useIsParent } from '../../stores/useAppStore';
 import { EmptyState } from '../../components/EmptyState';
 import { pageHeadingSx, T, BORDER } from '../../app/tokens';
 import { cancellationKey } from '../../data/repositories/courseCancellationRepository';
+import { COURSE_TYPE_LABELS, COURSE_TYPE_ORDER } from '@courseschedule/shared';
 import type { Course } from '@courseschedule/shared';
 import type { CourseOccurrence } from '@courseschedule/shared';
 import type { CourseFormData } from '../../stores/useScheduleStore';
@@ -162,7 +163,7 @@ export const SchedulePage: React.FC = () => {
             ))}
           </Box>
 
-          {/* 课程类型筛选：全部 / 校内 / 校外 */}
+          {/* 课程类型筛选：全部 / 校内 / 校外 / 充电 */}
           <Box
             sx={{
               display: 'inline-flex',
@@ -175,8 +176,7 @@ export const SchedulePage: React.FC = () => {
           >
             {([
               { value: 'all', label: '全部' },
-              { value: 'school', label: '校内' },
-              { value: 'extracurricular', label: '校外' },
+              ...COURSE_TYPE_ORDER.map((t) => ({ value: t, label: COURSE_TYPE_LABELS[t] })),
             ] as const).map((opt) => (
               <Box
                 key={opt.value}
@@ -253,9 +253,10 @@ export const SchedulePage: React.FC = () => {
         />
       )}
 
-      {/* 课程表单弹窗 */}
+      {/* 课程表单弹窗（从某个类型筛选进入添加时，默认选中该类型） */}
       <CourseFormDialog
         open={formOpen}
+        defaultType={typeFilter === 'all' ? undefined : typeFilter}
         course={editingCourseId ? courses.find((c) => c.id === editingCourseId) : undefined}
         existingRules={
           editingCourseId

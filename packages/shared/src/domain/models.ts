@@ -80,8 +80,8 @@ export interface ChildProfile extends BaseEntity {
 
 /* ─── 课程与排课 ─── */
 
-/** 课程类型：校内 / 校外 */
-export type CourseType = 'school' | 'extracurricular';
+/** 课程类型：校内 / 校外 / 充电（单独的充电学习安排） */
+export type CourseType = 'school' | 'extracurricular' | 'charging';
 
 /** 科目类别：基础课程 / 通识类 / 美术类 / 运动类 / 棋类 */
 export type SubjectCategory = 'basic' | 'general' | 'art' | 'sports' | 'chess';

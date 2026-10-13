@@ -8,6 +8,7 @@ import React from 'react';
 import { Box, Typography, Chip, Paper } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { COURSE_TYPE_LABELS } from '@courseschedule/shared';
 import type { CourseOccurrence } from '@courseschedule/shared';
 import { T, BORDER, BORDER_SOFT, SHADOW_SM } from '../../app/tokens';
 import { useSubjectResolver } from '../../stores/useSubjectStore';
@@ -109,7 +110,7 @@ export const TodayTimeline: React.FC<TodayTimelineProps> = ({ courses }) => {
                   {subject.name}
                 </Typography>
                 <Chip
-                  label={occ.courseType === 'school' ? '校内' : '校外'}
+                  label={COURSE_TYPE_LABELS[occ.courseType]}
                   size="small"
                   sx={{
                     bgcolor: subject.color,

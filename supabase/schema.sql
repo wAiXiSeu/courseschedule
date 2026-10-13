@@ -50,7 +50,7 @@ create table if not exists "courses" (
   "familyId"  text not null,
   "childId"   text not null,
   "name"      text not null,
-  "type"      text not null check ("type" in ('school', 'extracurricular')),
+  "type"      text not null check ("type" in ('school', 'extracurricular', 'charging')),
   "location"  text,
   "color"     text not null,
   "note"      text,

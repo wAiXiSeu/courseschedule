@@ -492,7 +492,7 @@ const StatChip: React.FC<{ label: string; value: number }> = ({ label, value }) 
 const RULE_ROWS = [
   { label: '完成一项学习计划任务', value: `+${POINT_RULES.planTask} ⭐` },
   { label: '完成一项到期复习任务', value: `+${POINT_RULES.reviewTask} ⭐` },
-  { label: '校外课程按时到课', value: `+${POINT_RULES.attendance} ⭐` },
+  { label: '校外课与充电按时到课', value: `+${POINT_RULES.attendance} ⭐` },
   { label: '一道错题变成已掌握', value: `+${POINT_RULES.mistakeMastered} ⭐` },
   { label: '当天到期任务全部完成', value: `+${POINT_RULES.dailyGoalBonus} ⭐` },
 ];

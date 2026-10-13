@@ -4,7 +4,21 @@
  * 包含科目（含分类与色板）、复习间隔、积分规则与内置兑换品等全局常量。
  */
 
-import type { PointEntryKind, Reward, Subject, SubjectCategory } from '../domain/models';
+import type { CourseType, PointEntryKind, Reward, Subject, SubjectCategory } from '../domain/models';
+
+/** 课程类型中文名映射 */
+export const COURSE_TYPE_LABELS: Record<CourseType, string> = {
+  school: '校内',
+  extracurricular: '校外',
+  charging: '充电',
+};
+
+/** 课程类型展示顺序（筛选 pill 与表单下拉共用） */
+export const COURSE_TYPE_ORDER: readonly CourseType[] = [
+  'school',
+  'extracurricular',
+  'charging',
+] as const;
 
 /** 科目类别中文名映射 */
 export const SUBJECT_CATEGORY_LABELS: Record<SubjectCategory, string> = {
@@ -139,7 +153,7 @@ export const POINT_RULES = {
   planTask: 10,
   /** 到期复习任务打卡（复习更反人性，略高） */
   reviewTask: 12,
-  /** 校外课程到课（校内课程不参与打卡） */
+  /** 校外课程与充电到课（校内课程不参与打卡） */
   attendance: 8,
   /** 错题转为已掌握 */
   mistakeMastered: 5,

@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   type CourseOccurrence,
   type CourseCancellation,
+  type CourseType,
   type ISODate,
   getMondayOfWeek,
   addDays,
@@ -24,8 +25,8 @@ import { useAppStore } from '../../stores/useAppStore';
 /** 视角模式 */
 export type ScheduleViewMode = 'week' | 'month';
 
-/** 课程类型筛选：全部 / 校内 / 校外 */
-export type ScheduleTypeFilter = 'all' | 'school' | 'extracurricular';
+/** 课程类型筛选：全部 / 校内 / 校外 / 充电 */
+export type ScheduleTypeFilter = 'all' | CourseType;
 
 /** 月视图网格中的单个日期格 */
 export interface MonthGridDay {
