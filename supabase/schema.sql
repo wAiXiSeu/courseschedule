@@ -292,14 +292,16 @@ create or replace function "myEmail"() returns text
 language sql stable security definer set search_path = public
 return (select lower("email") from "auth"."users" where "id" = auth.uid());
 
+-- 集合返回函数不能用 RETURN (子查询)：该形式按标量求值，账号属于多个家庭时会报
+-- "more than one row returned by a subquery used as an expression"。改用引号函数体（仍避开 dollar-quote）。
 create or replace function "myFamilyIds"() returns setof text
 language sql stable security definer set search_path = public
-return (
+as '
   select "id" from "families" where "ownerUserId" = auth.uid()
   union
   select "familyId" from "familyMembers"
-    where "userId" = auth.uid() and "status" = 'accepted'
-);
+    where "userId" = auth.uid() and "status" = ''accepted'';
+';
 
 create or replace function "isFamilyOwner"("fid" text) returns boolean
 language sql stable security definer set search_path = public

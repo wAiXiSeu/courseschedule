@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "courseschedule": {
+      "type": "streamable-http",
+      "url": "https://plan.waixi.wang/mcp",
+      "headers": {
+        "Authorization": "Bearer <MCP_HTTP_TOKEN>"
+      }
+    }
+  }
+}

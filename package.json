@@ -5,7 +5,10 @@
   "description": "小朋友课程表与学习管理 Monorepo",
   "scripts": {
     "dev": "pnpm -C packages/web dev",
-    "build": "pnpm -C packages/shared build && pnpm -C packages/web build",
+    "build": "pnpm -C packages/shared build && pnpm -C packages/web build && pnpm -C packages/mcp build",
+    "build:mcp": "pnpm -C packages/mcp build",
+    "smoke:mcp": "pnpm -C packages/mcp smoke",
+    "deploy:mcp": "bash .deploy/deploy-mcp.sh",
     "lint": "pnpm -C packages/web lint",
     "clean": "pnpm -r exec rm -rf dist node_modules"
   },

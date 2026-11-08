@@ -1,0 +1,49 @@
+# courseschedule-mcp.service — 课程表 MCP HTTP 服务（systemd 模板）
+#
+# 用法：
+#   1) 复制到 /etc/systemd/system/courseschedule-mcp.service
+#   2) 替换占位符：
+#        __SERVICE_USER__  运行用户（需能读 packages/mcp/.env 与 node_modules）
+#        __APP_DIR__       仓库根目录，如 /srv/courseschedule
+#        __NODE_BIN__      Node 绝对路径（>=20.12），如 /usr/local/bin/node
+#   3) 确保 __APP_DIR__/packages/mcp/.env 已填 SUPABASE_* 与 MCP_HTTP_TOKEN
+#      （config 会相对 dist/http.js 自动定位该 .env，无需 EnvironmentFile）
+#   4) sudo systemctl daemon-reload && sudo systemctl enable --now courseschedule-mcp
+#   5) 验证：curl -s http://127.0.0.1:8787/health  → ok
+#
+# 说明：
+# - 服务启动时会以家长账号登录并把家庭空间锚定在启动那一刻。
+# - 如需临时覆盖 .env 里的变量，取消下面 Environment= 注释。
+# - 加固项默认只开最保守的两项；若部署目录在 /home 下，勿开 ProtectHome。
+
+[Unit]
+Description=Courseschedule MCP (Streamable HTTP)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_USER__
+WorkingDirectory=__APP_DIR__/packages/mcp
+ExecStart=__NODE_BIN__ __APP_DIR__/packages/mcp/dist/http.js
+
+Restart=on-failure
+RestartSec=3
+
+# 日志走 stderr，用 journalctl -u courseschedule-mcp -f 查看
+StandardOutput=journal
+StandardError=journal
+
+# 覆盖 .env 中的同名变量（可选）
+# Environment=MCP_HTTP_HOST=127.0.0.1
+# Environment=MCP_HTTP_PORT=8787
+
+# 最保守的加固；部署目录在 /home 时不要加 ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+# ProtectSystem=full
+# ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
